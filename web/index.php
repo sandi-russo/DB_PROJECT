@@ -16,6 +16,6 @@ try {
     echo "Connessione al database avvenuta con successo!";
 } catch (Exception $e) {
     error_log($e->getMessage());
-    die("Errore di connessione: " . $e->getMessage());
+    die("Errore di connessione al db: " . $e->getMessage());
 }
 ?>
