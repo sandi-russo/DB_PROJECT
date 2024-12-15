@@ -1,0 +1,45 @@
+version: '3.8'
+services:
+  # Servizio Web con PHP
+  web:
+    build: 
+      context: ./
+      dockerfile: Dockerfile.php
+    ports:
+      - "80:80"
+    volumes:
+      - ./src:/var/www/html
+    depends_on:
+      - database
+    environment:
+      - MYSQL_HOST=database
+      - MYSQL_USER=developer
+      - MYSQL_PASSWORD=dev_password
+      - MYSQL_DATABASE=progetto_database
+
+  # Servizio Database MySQL
+  database:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: root_secret
+      MYSQL_DATABASE: progetto_database
+      MYSQL_USER: developer
+      MYSQL_PASSWORD: dev_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./database:/var/lib/mysql
+      - ./database/init:/docker-entrypoint-initdb.d
+
+  # PhpMyAdmin per gestione database
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    environment:
+      PMA_HOST: database
+      PMA_PORT: 3306
+      PMA_USER: developer
+      PMA_PASSWORD: dev_password
+    ports:
+      - "8080:80"
+    depends_on:
+      - database
