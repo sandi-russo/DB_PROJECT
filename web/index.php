@@ -1,21 +1,6 @@
-<?php
-try {
-    $servername = "db";
-    $username = "utente";
-    $password = "password";
-    $dbname = "nome_database";
+<?
 
-    // Crea connessione con gestione degli errori
-    $conn = new mysqli($servername, $username, $password, $dbname);
+// Includi l'intero file functions.php
+require_once 'functions.php';
 
-    // Controlla la connessione
-    if ($conn->connect_error) {
-        throw new Exception("Connessione fallita: " . $conn->connect_error);
-    }
-
-    echo "Connessione al database avvenuta con successo!";
-} catch (Exception $e) {
-    error_log($e->getMessage());
-    die("Errore di connessione al db: " . $e->getMessage());
-}
-?>
+CreaTabelle($conn);
