@@ -1,5 +1,6 @@
 <?php
 include('functions.php');
+require_once 'auth.php';
 
 // Aggiungi una aula
 if (isset($_POST['AggiungiAula'])) {

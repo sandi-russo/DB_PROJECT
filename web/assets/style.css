@@ -19,16 +19,6 @@ label {
     font-weight: bold;
 }
 
-input[type="text"],
-input[type="number"],
-input[type="time"],
-select {
-    width: 100%;
-    padding: 8px;
-    margin-top: 5px;
-    margin-bottom: 10px;
-}
-
 button {
     background-color: #4CAF50;
     color: white;
@@ -146,4 +136,51 @@ button[type="button"]:hover {
 .styled-table tbody tr:hover {
     background-color: #f1f1f1;
     cursor: pointer;
+}
+
+/* Generale per tutti i campi di input */
+form input[type="text"],
+form input[type="email"],
+form input[type="password"],
+input[type="time"] {
+    height: 40px; /* Altezza uniforme */
+    padding: 0 10px; /* Spazio interno */
+    font-size: 16px; /* Testo leggibile */
+    border: 1px solid #ccc; /* Bordo standard */
+    border-radius: 5px; /* Angoli arrotondati */
+    box-sizing: border-box; /* Assicura che il padding non aumenti l'altezza */
+    width: 100%; /* Si adatta al contenitore */
+}
+
+/* Stile "crea amministratore" */
+.password-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    height: 40px; /* Altezza uniforme con gli altri campi */
+}
+
+.password-container input {
+    flex: 1; /* Occupa tutto lo spazio disponibile */
+    height: 100%; /* Stessa altezza del contenitore */
+}
+
+.toggle-password {
+    position: absolute;
+    right: 10px;
+    cursor: pointer;
+    user-select: none;
+    height: 100%; /* Allineamento con l'input */
+    display: flex;
+    align-items: center; /* Centratura verticale dell'icona */
+}
+
+.toggle-password i {
+    font-size: 20px;
+    color: #666;
+    transition: color 0.3s;
+}
+
+.toggle-password i:hover {
+    color: #333;
 }

@@ -1,5 +1,6 @@
 <?php
 require_once 'functions.php';
+require_once 'auth.php';
 
 $giorniConVincoli = []; // Inizializza come array vuoto
 

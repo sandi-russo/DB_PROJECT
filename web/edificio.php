@@ -1,5 +1,6 @@
 <?php
 include('functions.php');
+require_once 'auth.php';
 
 // Ottieni le zone con gli indirizzi
 $zone = [

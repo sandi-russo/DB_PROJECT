@@ -36,6 +36,12 @@ function LoginAmministratore($email, $password)
 
     // Prepara la query per recuperare nome, cognome e password
     $stmt = $conn->prepare("SELECT Nome, Cognome, Password FROM AMMINISTRATORE WHERE Email = ?");
+    if (!$stmt) {
+      // Gestisci l'errore se la query non è preparata correttamente
+      ChiudiConnessione($conn);
+      return false;
+    }
+
     $stmt->bind_param("s", $email);
     $stmt->execute();
     $stmt->store_result();
@@ -56,9 +62,6 @@ function LoginAmministratore($email, $password)
 
     // Verifica la corrispondenza delle password
     if ($hashedInputPassword === $hashedPassword) {
-      // Avvia la sessione
-      session_start();
-
       // Salva il nome e cognome dell'amministratore nella sessione
       $_SESSION['nome'] = $nome;
       $_SESSION['cognome'] = $cognome;
@@ -67,9 +70,7 @@ function LoginAmministratore($email, $password)
       $stmt->close();
       ChiudiConnessione($conn);
 
-      // Reindirizza alla dashboard
-      header("Location: dashboard.php");
-      exit(); // Assicurati che il codice non prosegua dopo il redirect
+      return true; // Login riuscito
     }
 
     // Password errata
@@ -81,6 +82,75 @@ function LoginAmministratore($email, $password)
     return false; // In caso di errore, il login fallisce
   }
 }
+
+// Funzione per validare la password
+function PasswordValida($password)
+{
+  // La password deve contenere almeno 10 caratteri, una lettera maiuscola, una minuscola, un numero e un carattere speciale
+  return preg_match('/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{10,}$/', $password);
+}
+
+// Funzione per creare un nuovo amministratore
+function CreaAmministratore($nome, $cognome, $email, $password)
+{
+  try {
+    // Verifica se l'email è già presente nel database
+    $conn = ApriConnessione();
+    $stmt = $conn->prepare("SELECT COUNT(*) AS count FROM AMMINISTRATORE WHERE Email = ?");
+    if (!$stmt) {
+      ChiudiConnessione($conn);
+      return ['success' => false, 'message' => "Errore nella preparazione della query di controllo email."];
+    }
+
+    $stmt->bind_param("s", $email);
+    $stmt->execute();
+    $stmt->bind_result($count);
+    $stmt->fetch();
+    $stmt->close();
+
+    if ($count > 0) {
+      ChiudiConnessione($conn);
+      return ['success' => false, 'message' => "L'email inserita è già in uso."];
+    }
+
+    // Verifica che la password sia valida
+    if (!PasswordValida($password)) {
+      ChiudiConnessione($conn);
+      return ['success' => false, 'message' => "La password non soddisfa i requisiti. Deve contenere almeno 10 caratteri, una lettera maiuscola, una minuscola, un numero e un carattere speciale."];
+    }
+
+    // Uppercase e trim del nome per l'ID (opzionale, lasciato come esempio)
+    $nomeUpper = strtoupper(trim($nome));
+
+    // Hasha la password con SHA256
+    $hashedPassword = hash("sha256", $password);
+
+    // Prepara la query di inserimento
+    $stmt = $conn->prepare("INSERT INTO AMMINISTRATORE (Nome, Cognome, Email, Password) VALUES (?, ?, ?, ?)");
+    if (!$stmt) {
+      ChiudiConnessione($conn);
+      return ['success' => false, 'message' => "Errore nella preparazione della query di inserimento."];
+    }
+
+    $stmt->bind_param("ssss", $nome, $cognome, $email, $hashedPassword);
+
+    // Esegui la query
+    if ($stmt->execute()) {
+      $stmt->close();
+      ChiudiConnessione($conn);
+      return ['success' => true, 'message' => "Amministratore aggiunto con successo."];
+    } else {
+      $stmt->close();
+      ChiudiConnessione($conn);
+      return ['success' => false, 'message' => "Errore nell'inserimento dell'amministratore."];
+    }
+
+  } catch (Exception $e) {
+    return ['success' => false, 'message' => "Errore: " . $e->getMessage()];
+  }
+}
+
+
 
 // FUNZIONE PER LA CREAZIONE DELLE TABELLE NEL DATABASE
 function CreaTabelle($conn)
@@ -471,7 +541,8 @@ function ottieniCapacitaTotaleEdificio($idEdificio)
 }
 
 // Funzione per controllare se l'edificio esiste già
-function edificioEsiste($nomeEdificio) {
+function edificioEsiste($nomeEdificio)
+{
   $conn = ApriConnessione();
   $query = "SELECT COUNT(*) AS count FROM EDIFICIO WHERE Nome = ?";
   $stmt = $conn->prepare($query);
