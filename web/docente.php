@@ -94,8 +94,13 @@ $unita = OttieniUnitaOrganizzativa();
             <?php endforeach; ?>
         </select><br>
 
-        <label for="maxOreConsentite">Max Ore Consentite:</label>
-        <input type="number" id="maxOreConsentite" name="maxOreConsentite" required><br>
+        <label for="tipoDocente">Tipo di Docente:</label>
+        <select id="tipoDocente" name="tipoDocente" required>
+            <option value="">Seleziona il tipo di docente</option>
+            <option value="docente_associato">Docente Associato - 100 ore</option>
+            <option value="docente_ordinario">Docente Ordinario - 120 ore</option>
+            <option value="docente_ricercatore">Docente Ricercatore - 90 ore</option>
+        </select><br>
 
         <h3>Disponibilità Oraria</h3>
         <div class="disponibilita-container">
@@ -117,10 +122,12 @@ $unita = OttieniUnitaOrganizzativa();
                             <div class="fascia-oraria">
                                 <div class="input-group">
                                     <label>Ora Inizio:
-                                        <input type="time" name="<?php echo $giorno; ?>[0][oraInizio]" class="ora-inizio">
+                                        <input type="time" name="<?php echo $giorno; ?>[0][oraInizio]" class="ora-inizio"
+                                            min="09:00" max="18:00">
                                     </label>
                                     <label>Ora Fine:
-                                        <input type="time" name="<?php echo $giorno; ?>[0][oraFine]" class="ora-fine">
+                                        <input type="time" name="<?php echo $giorno; ?>[0][oraFine]" class="ora-fine"
+                                            min="09:00" max="18:00">
                                     </label>
                                 </div>
                             </div>
@@ -132,6 +139,7 @@ $unita = OttieniUnitaOrganizzativa();
 
         <button type="submit">Crea Docente</button>
     </form>
+
 
     <h3>ELENCO DOCENTI</h3>
     <?php VisualizzaElencoDocenti() ?>
