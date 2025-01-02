@@ -498,412 +498,120 @@ function OttieniUnitaOrganizzativaPerModifica($codice)
   return $unita;
 }
 
-// FUNZIONE PER LA CREAZIONE DEI DOCENTI
-function CreaDocente($nome, $cognome, $ssd, $unitaOrganizzativa, $disponibilita, $maxOreConsentite)
+// FUNZIONE PER INSERIRE UN CORSO DI STUDIO
+function InserisciCorsoDiStudio($codice, $nome, $percorso, $annoCorso)
 {
-  try {
-    // Apri connessione
     $conn = ApriConnessione();
 
-    // Inizio della transazione
-    $conn->begin_transaction();
+    try {
+        $query = "INSERT INTO CORSO_DI_STUDIO (Codice, Nome, Percorso, AnnoCorso) VALUES (?, ?, ?, ?)";
+        $stmt = $conn->prepare($query);
 
-    // Inserimento del docente nella tabella DOCENTE
-    $stmt = $conn->prepare("INSERT INTO DOCENTE (Nome, Cognome, SSD, UnitaOrganizzativa) VALUES (?, ?, ?, ?)");
-    $stmt->bind_param("ssss", $nome, $cognome, $ssd, $unitaOrganizzativa);
-    if (!$stmt->execute()) {
-      throw new Exception("Errore nell'inserimento del docente: " . $stmt->error);
-    }
-    $docenteId = $conn->insert_id; // Ottieni l'ID del docente appena inserito
-
-    // Inserimento del massimo numero di ore consentite nella tabella CARICO_LAVORO_DOCENTE
-    $stmt = $conn->prepare("INSERT INTO CARICO_LAVORO_DOCENTE (ID_Docente, OreTotali, MaxOreConsentite) VALUES (?, 0, ?)");
-    $stmt->bind_param("ii", $docenteId, $maxOreConsentite);
-    if (!$stmt->execute()) {
-      throw new Exception("Errore nell'inserimento delle ore di lavoro del docente: " . $stmt->error);
-    }
-
-    // Inserimento delle disponibilità orarie nella tabella DISPONIBILITA_DOCENTE
-    foreach ($disponibilita as $giorno => $orari) {
-      foreach ($orari as $orario) {
-        $stmt = $conn->prepare("INSERT INTO DISPONIBILITA_DOCENTE (ID_Docente, Giorno, OraInizio, OraFine) VALUES (?, ?, ?, ?)");
-        $stmt->bind_param("ssss", $docenteId, $giorno, $orario['oraInizio'], $orario['oraFine']);
-        if (!$stmt->execute()) {
-          throw new Exception("Errore nell'inserimento della disponibilità oraria: " . $stmt->error);
+        if ($stmt === false) {
+            throw new Exception("Errore nella preparazione della query: " . $conn->error);
         }
-      }
+
+        $stmt->bind_param("sssi", $codice, $nome, $percorso, $annoCorso);
+
+        if ($stmt->execute()) {
+            return "Corso di studio inserito con successo!";
+        } else {
+            throw new Exception("Errore nell'inserimento del corso di studio: " . $stmt->error);
+        }
+    } catch (Exception $e) {
+        return "Errore: " . $e->getMessage();
+    } finally {
+        $stmt->close();
+        ChiudiConnessione($conn);
     }
-
-    // Commit della transazione
-    $conn->commit();
-
-    // Chiudi risorse
-    $stmt->close();
-    ChiudiConnessione($conn);
-
-    return "Docente inserito correttamente!";
-  } catch (Exception $e) {
-    // Rollback della transazione in caso di errore
-    $conn->rollback();
-    ChiudiConnessione($conn);
-    return "Errore: " . $e->getMessage();
-  }
 }
 
-// FUNZIONE PER OTTENERE GLI SSD
-function OttieniSSD()
+// FUNZIONE PER MODIFICARE I CORSI DI STUDIO
+function ModificaCorsoDiStudio($codice, $nome, $percorso, $annoCorso)
 {
-  $conn = ApriConnessione();
-  $query = "SELECT SSD, NomeSettore FROM SETTORE_SCIENTIFICO";
-  $result = $conn->query($query);
-  $ssds = [];
-  while ($row = $result->fetch_assoc()) {
-    $ssds[] = $row;
-  }
-  ChiudiConnessione($conn);
-  return $ssds;
-}
-
-// FUNZIONE PER OTTENERE LE UNITÀ ORGANIZZATIVE
-function OttieniUnitaOrganizzativa()
-{
-  $conn = ApriConnessione();
-  $query = "SELECT Codice, Nome FROM UNITA_ORGANIZZATIVA";
-  $result = $conn->query($query);
-  $unita = [];
-  while ($row = $result->fetch_assoc()) {
-    $unita[] = $row;
-  }
-  ChiudiConnessione($conn);
-  return $unita;
-}
-
-// FUNZIONE PER VISUALIZZARE L'ELENCO DEI DOCENTI
-function VisualizzaElencoDocenti()
-{
-  try {
-    // Apri la connessione al database
     $conn = ApriConnessione();
 
-    // Query per ottenere l'elenco dei docenti
-    $sql = "SELECT 
-                    d.ID_Docente,
-                    d.Nome,
-                    d.Cognome,
-                    d.SSD,
-                    u.Nome AS UnitaOrganizzativa
-                FROM 
-                    DOCENTE d
-                LEFT JOIN 
-                    UNITA_ORGANIZZATIVA u 
-                ON 
-                    d.UnitaOrganizzativa = u.Codice";
+    try {
+        $query = "UPDATE CORSO_DI_STUDIO SET Nome = ?, Percorso = ?, AnnoCorso = ? WHERE Codice = ?";
+        $stmt = $conn->prepare($query);
 
-    // Esegui la query
-    $result = $conn->query($sql);
+        if ($stmt === false) {
+            throw new Exception("Errore nella preparazione della query: " . $conn->error);
+        }
 
-    if ($result->num_rows > 0) {
-      // Stampa l'elenco dei docenti con uno stile migliorato
-      echo "<table class='styled-table'>";
-      echo "<thead>
-                    <tr>
-                        <th>ID Docente</th>
-                        <th>Nome</th>
-                        <th>Cognome</th>
-                        <th>SSD</th>
-                        <th>Unità Organizzativa</th>
-                    </tr>
-                  </thead>
-                  <tbody>";
-      while ($row = $result->fetch_assoc()) {
-        echo "<tr>
-                        <td>{$row['ID_Docente']}</td>
-                        <td>{$row['Nome']}</td>
-                        <td>{$row['Cognome']}</td>
-                        <td>{$row['SSD']}</td>
-                        <td>{$row['UnitaOrganizzativa']}</td>
-                      </tr>";
-      }
-      echo "</tbody></table>";
-    } else {
-      echo "<p>Nessun docente trovato.</p>";
+        $stmt->bind_param("ssis", $nome, $percorso, $annoCorso, $codice);
+
+        if ($stmt->execute()) {
+            if ($stmt->affected_rows > 0) {
+                return "Corso di studio modificato con successo!";
+            } else {
+                return "Nessuna modifica apportata al corso di studio.";
+            }
+        } else {
+            throw new Exception("Errore nella modifica del corso di studio: " . $stmt->error);
+        }
+    } catch (Exception $e) {
+        return "Errore: " . $e->getMessage();
+    } finally {
+        $stmt->close();
+        ChiudiConnessione($conn);
     }
-
-    // Chiudi la connessione
-    ChiudiConnessione($conn);
-  } catch (Exception $e) {
-    error_log($e->getMessage());
-    echo "Errore: " . $e->getMessage();
-  }
 }
 
-// FUNZIONE PER AGGIUNGERE UN EDIFICIO
-function aggiungiEdificio($id, $nome, $indirizzo, $capacitaTotale)
+// FUNZIONE PER ELIMINARE UN CORSO DI STUDIO
+function RimuoviCorsoDiStudio($codice)
 {
-  // Apri la connessione al database
-  $conn = ApriConnessione();
-
-  // Prepara la query di inserimento
-  $query = "INSERT INTO EDIFICIO (ID_Edificio, Nome, Indirizzo, CapacitaTotale) 
-              VALUES (?, ?, ?, ?)";
-  $stmt = $conn->prepare($query);
-
-  // Verifica se la preparazione della query è riuscita
-  if (!$stmt) {
-    // Gestisci l'errore se la query non è preparata correttamente
-    echo "Errore nella preparazione della query: " . $conn->error;
-    ChiudiConnessione($conn);
-    return false;
-  }
-
-  // Associa i parametri alla query
-  $stmt->bind_param("sssi", $id, $nome, $indirizzo, $capacitaTotale);
-
-  // Esegui la query
-  $result = $stmt->execute();
-
-  // Verifica se l'esecuzione della query è riuscita
-  if ($result) {
-    // Se la query ha avuto successo
-    ChiudiConnessione($conn);
-    return true;  // Ritorna true per indicare il successo
-  } else {
-    // Se c'è stato un errore nell'esecuzione
-    echo "Errore nell'esecuzione della query: " . $stmt->error;
-    ChiudiConnessione($conn);
-    return false;  // Ritorna false per indicare il fallimento
-  }
-}
-
-
-// FUNZIONE PER OTTENERE LA CAPACITÀ TOTALE DI UN EDIFICIO
-function ottieniCapacitaTotaleEdificio($idEdificio)
-{
-  $conn = ApriConnessione();
-  $query = "SELECT CapacitaTotale FROM EDIFICIO WHERE ID_Edificio = ?";
-  $stmt = $conn->prepare($query);
-  $stmt->bind_param("s", $idEdificio);
-  $stmt->execute();
-  $stmt->bind_result($capacitaTotale);
-  $stmt->fetch();
-  ChiudiConnessione($conn);
-
-  return $capacitaTotale ? $capacitaTotale : 0;
-}
-
-// Funzione per controllare se l'edificio esiste già
-function edificioEsiste($nomeEdificio)
-{
-  $conn = ApriConnessione();
-  $query = "SELECT COUNT(*) AS count FROM EDIFICIO WHERE Nome = ?";
-  $stmt = $conn->prepare($query);
-  $stmt->bind_param("s", $nomeEdificio);
-  $stmt->execute();
-  $result = $stmt->get_result()->fetch_assoc();
-  ChiudiConnessione($conn);
-  return $result['count'] > 0;
-}
-
-// FUNZIONE PER AGGIUNGERE UN'AULA
-function aggiungiAula($nome, $capacita, $tipologia, $edificio)
-{
-  $conn = ApriConnessione();
-
-  // Verifica che l'edificio esista e che la capacità totale non venga superata
-  $capacitaUsata = OttieniCapacitaUtilizzataEdificio($edificio);
-  $capacitaTotale = OttieniCapacitaTotaleEdificio($edificio);
-
-  if ($capacitaUsata + $capacita > $capacitaTotale) {
-    ChiudiConnessione($conn);
-    return "Impossibile aggiungere l'aula: la capacità dell'edificio è stata superata.";
-  }
-
-  // Aggiungi l'aula
-  $query = "INSERT INTO AULA (Nome, Capacita, Tipologia, Edificio) 
-              VALUES (?, ?, ?, ?)";
-  $stmt = $conn->prepare($query);
-  $stmt->bind_param("siss", $nome, $capacita, $tipologia, $edificio);
-  $stmt->execute();
-  ChiudiConnessione($conn);
-
-  return "Aula aggiunta con successo!";
-}
-
-// FUNZIONE PER OTTENERE LA CAPACITÀ GIÀ UTILIZZATA IN UN EDIFICIO
-function OttieniCapacitaUtilizzataEdificio($edificio)
-{
-  $conn = ApriConnessione();
-  $query = "SELECT SUM(Capacita) as totalUsed FROM AULA WHERE Edificio = ?";
-  $stmt = $conn->prepare($query);
-  $stmt->bind_param("s", $edificio);
-  $stmt->execute();
-  $stmt->bind_result($capacitaUtilizzata);
-  $stmt->fetch();
-  ChiudiConnessione($conn);
-
-  return $capacitaUtilizzata ? $capacitaUtilizzata : 0;
-}
-
-// FUNZIONE PER MODIFICARE L'AULA (CAPACITÀ, NOME...)
-function ModificaAula($idAula, $nome, $capacita, $tipologia)
-{
-  $conn = ApriConnessione();
-
-  // Verifica che la nuova capacità non superi la capacità totale
-  $edificio = OttieniEdificioDellaAula($idAula);
-  $capacitaUsata = OttieniCapacitaUtilizzataEdificio($edificio) - OttieniCapacitaAula($idAula);
-  $capacitaTotale = OttieniCapacitaTotaleEdificio($edificio);
-
-  if ($capacitaUsata + $capacita > $capacitaTotale) {
-    ChiudiConnessione($conn);
-    return "Impossibile modificare l'aula: la capacità dell'edificio è stata superata.";
-  }
-
-  // Modifica l'aula
-  $query = "UPDATE AULA SET Nome = ?, Capacita = ?, Tipologia = ? WHERE ID_Aula = ?";
-  $stmt = $conn->prepare($query);
-  $stmt->bind_param("sisi", $nome, $capacita, $tipologia, $idAula);
-  $stmt->execute();
-  ChiudiConnessione($conn);
-
-  return "Aula modificata con successo!";
-}
-
-// FUNZIONE PER MODIFICARE UN EDIFICIO
-function ModificaEdificio($idEdificio, $nome, $indirizzo, $capacitaTotale)
-{
-  try {
     $conn = ApriConnessione();
 
-    // Prepara la query per aggiornare l'edificio
-    $sql = "UPDATE EDIFICIO 
-            SET Nome = ?, Indirizzo = ?, CapacitaTotale = ? 
-            WHERE ID_Edificio = ?";
+    try {
+        $query = "DELETE FROM CORSO_DI_STUDIO WHERE Codice = ?";
+        $stmt = $conn->prepare($query);
 
-    // Prepara la query
-    $stmt = $conn->prepare($sql);
+        if ($stmt === false) {
+            throw new Exception("Errore nella preparazione della query: " . $conn->error);
+        }
 
-    // Bind dei parametri
-    $stmt->bind_param("ssis", $nome, $indirizzo, $capacitaTotale, $idEdificio);
+        $stmt->bind_param("s", $codice);
 
-    // Esegui la query
-    if ($stmt->execute()) {
-      $stmt->close();
-      ChiudiConnessione($conn);
-      return "Edificio modificato con successo.";
-    } else {
-      $stmt->close();
-      ChiudiConnessione($conn);
-      return "Errore nella modifica dell'edificio.";
+        if ($stmt->execute()) {
+            if ($stmt->affected_rows > 0) {
+                return "Corso di studio rimosso con successo!";
+            } else {
+                return "Nessun corso di studio trovato con il codice specificato.";
+            }
+        } else {
+            throw new Exception("Errore nell'eliminazione del corso di studio: " . $stmt->error);
+        }
+    } catch (Exception $e) {
+        return "Errore: " . $e->getMessage();
+    } finally {
+        $stmt->close();
+        ChiudiConnessione($conn);
     }
-  } catch (Exception $e) {
-    ChiudiConnessione($conn);
-    error_log($e->getMessage());
-    return "Errore: " . $e->getMessage();
-  }
 }
 
-
-// FUNZIONE PER OTTENERE I DETTAGLI DI UN EDIFICIO
-function OttieniDettagliEdificio($idEdificio)
+// FUNZIONE PER OTTENERE TUTTI I CORSI DI STUDIO
+function OttieniCorsiDiStudio()
 {
-  $conn = ApriConnessione();
-  $query = "SELECT ID_Edificio, Nome, Indirizzo, CapacitaTotale FROM EDIFICIO WHERE ID_Edificio = ?";
-  $stmt = $conn->prepare($query);
-  $stmt->bind_param("s", $idEdificio);
-  $stmt->execute();
-  $stmt->bind_result($id, $nome, $indirizzo, $capacitaTotale);
-  $stmt->fetch();
-  ChiudiConnessione($conn);
-
-  return ['ID_Edificio' => $id, 'Nome' => $nome, 'Indirizzo' => $indirizzo, 'CapacitaTotale' => $capacitaTotale];
-}
-
-
-// FUNZIONE PER OTTENERE LA CAPACITÀ DI UN'AULA
-function OttieniCapacitaAula($idAula)
-{
-  $conn = ApriConnessione();
-  $query = "SELECT Capacita FROM AULA WHERE ID_Aula = ?";
-  $stmt = $conn->prepare($query);
-  $stmt->bind_param("i", $idAula);
-  $stmt->execute();
-  $stmt->bind_result($capacita);
-  $stmt->fetch();
-  ChiudiConnessione($conn);
-
-  return $capacita ? $capacita : 0;
-}
-
-// FUNZIONE PER OTTENERE L'EDIFICIO DI UN'AULA
-function OttieniEdificioDellaAula($idAula)
-{
-  $conn = ApriConnessione();
-  $query = "SELECT Edificio FROM AULA WHERE ID_Aula = ?";
-  $stmt = $conn->prepare($query);
-  $stmt->bind_param("i", $idAula);
-  $stmt->execute();
-  $stmt->bind_result($edificio);
-  $stmt->fetch();
-  ChiudiConnessione($conn);
-
-  return $edificio ? $edificio : null;
-}
-
-// FUNZIONE PER RIMUOVERE UN'AULA
-function RimuoviAula($idAula)
-{
-  $conn = ApriConnessione();
-  $query = "DELETE FROM AULA WHERE ID_Aula = ?";
-  $stmt = $conn->prepare($query);
-  $stmt->bind_param("i", $idAula);
-  $stmt->execute();
-  ChiudiConnessione($conn);
-
-  return "Aula rimossa con successo!";
-}
-
-// FUNZIONE PER OTTENERE GLI EDIFICI PER ZONA
-function OttieniEdificiPerZona($zona)
-{
-  try {
     $conn = ApriConnessione();
-    $zonaRicerca = "%$zona%";
-    $sql = "SELECT ID_Edificio, Nome FROM EDIFICIO WHERE Indirizzo LIKE ?";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("s", $zonaRicerca);
-    $stmt->execute();
-    $result = $stmt->get_result();
 
-    $edifici = [];
-    while ($row = $result->fetch_assoc()) {
-      $edifici[] = $row;
+    try {
+        $query = "SELECT * FROM CORSO_DI_STUDIO";
+        $result = $conn->query($query);
+
+        if ($result === false) {
+            throw new Exception("Errore nella query: " . $conn->error);
+        }
+
+        $corsi = [];
+        while ($row = $result->fetch_assoc()) {
+            $corsi[] = $row;
+        }
+
+        return $corsi;
+    } catch (Exception $e) {
+        return "Errore: " . $e->getMessage();
+    } finally {
+        ChiudiConnessione($conn);
     }
-
-    $stmt->close();
-    ChiudiConnessione($conn);
-    return $edifici;
-
-  } catch (Exception $e) {
-    ChiudiConnessione($conn);
-    error_log($e->getMessage());
-    return "Errore: " . $e->getMessage();
-  }
-}
-
-// FUNZIONE PER OTTENERE LE AULE IN UN EDIFICIO
-function OttieniAulePerEdificio($edificio)
-{
-  $conn = ApriConnessione();
-  $query = "SELECT ID_Aula, Nome FROM AULA WHERE Edificio = ?";
-  $stmt = $conn->prepare($query);
-  $stmt->bind_param("s", $edificio);
-  $stmt->execute();
-  $result = $stmt->get_result();
-  $aule = [];
-  while ($row = $result->fetch_assoc()) {
-    $aule[] = $row;
-  }
-  ChiudiConnessione($conn);
-  return $aule;
 }
