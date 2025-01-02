@@ -615,3 +615,65 @@ function OttieniCorsiDiStudio()
         ChiudiConnessione($conn);
     }
 }
+
+// Funzione per ottenere tutti i settori scientifici
+function OttieniSettoriScientifici() {
+  $conn = ApriConnessione();
+  $sql = "SELECT * FROM SETTORE_SCIENTIFICO";
+  $result = $conn->query($sql);
+
+  $settori = [];
+  while ($row = $result->fetch_assoc()) {
+      $settori[] = $row;
+  }
+  ChiudiConnessione($conn);
+  return $settori;
+}
+
+// Funzione per inserire un settore scientifico
+function InserisciSettoreScientifico($ssd, $nome) {
+  $conn = ApriConnessione();
+  $sql = "INSERT INTO SETTORE_SCIENTIFICO (SSD, NomeSettore) VALUES (?, ?)";
+  $stmt = $conn->prepare($sql);
+  $stmt->bind_param("ss", $ssd, $nome);
+
+  if ($stmt->execute()) {
+      ChiudiConnessione($conn);
+      return "Settore scientifico inserito con successo!";
+  } else {
+      ChiudiConnessione($conn);
+      return "Errore durante l'inserimento del settore scientifico.";
+  }
+}
+
+// Funzione per rimuovere un settore scientifico
+function RimuoviSettoreScientifico($ssd) {
+  $conn = ApriConnessione();
+  $sql = "DELETE FROM SETTORE_SCIENTIFICO WHERE SSD = ?";
+  $stmt = $conn->prepare($sql);
+  $stmt->bind_param("s", $ssd);
+
+  if ($stmt->execute()) {
+      ChiudiConnessione($conn);
+      return "Settore scientifico rimosso con successo!";
+  } else {
+      ChiudiConnessione($conn);
+      return "Errore durante la rimozione del settore scientifico.";
+  }
+}
+
+// Funzione per modificare un settore scientifico
+function ModificaSettoreScientifico($ssd, $nuovoNome) {
+  $conn = ApriConnessione();
+  $sql = "UPDATE SETTORE_SCIENTIFICO SET NomeSettore = ? WHERE SSD = ?";
+  $stmt = $conn->prepare($sql);
+  $stmt->bind_param("ss", $nuovoNome, $ssd);
+
+  if ($stmt->execute()) {
+      ChiudiConnessione($conn);
+      return "Settore scientifico modificato con successo!";
+  } else {
+      ChiudiConnessione($conn);
+      return "Errore durante la modifica del settore scientifico.";
+  }
+}
