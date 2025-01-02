@@ -47,6 +47,19 @@ button[type="button"]:hover {
     background-color: #007B9F;
 }
 
+button.delete {
+    background-color: #e74c3c;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    cursor: pointer;
+}
+
+button.delete:hover {
+    background-color: #c0392b;
+}
+
+
 .disponibilita-container {
     margin-top: 20px;
 }

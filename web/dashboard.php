@@ -2,6 +2,17 @@
 // dashboard.php
 
 require_once 'auth.php'; // Assicurati che l'utente sia autenticato
+
+// Funzione per generare un nome leggibile da un nome file
+function formattaNomeFile($filename) {
+    $filename = basename($filename, '.php'); // Rimuove l'estensione .php
+    $filename = str_replace('_', ' ', $filename); // Sostituisce underscore con spazi
+    return ucwords($filename); // Trasforma in maiuscolo le parole
+}
+
+// Ottieni tutti i file .php nella directory corrente
+$files = glob("*.php");
+
 ?>
 <!DOCTYPE html>
 <html lang="it">
@@ -17,11 +28,15 @@ require_once 'auth.php'; // Assicurati che l'utente sia autenticato
         <a href="logout.php">Logout</a>
     </div>
 
+    <h2>Gestione Risorse</h2>
     <ul>
-        <li><a href="docente.php">Gestisci Docenti</a></li>
-        <li><a href="aula.php">Gestisci Aule</a></li>
-        <li><a href="edificio.php">Gestisci Edifici</a></li>
-        <li><a href="crea_amministratore.php">Crea Nuovo Amministratore</a></li>
+        <?php foreach ($files as $file): ?>
+            <?php if ($file !== 'dashboard.php' && $file !== 'auth.php' && $file !== 'logout.php'): ?>
+                <li><a href="<?php echo htmlspecialchars($file); ?>">
+                    <?php echo htmlspecialchars(formattaNomeFile($file)); ?>
+                </a></li>
+            <?php endif; ?>
+        <?php endforeach; ?>
     </ul>
 </body>
 </html>

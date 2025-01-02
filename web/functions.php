@@ -164,170 +164,172 @@ function CreaTabelle($conn)
     $queries = [
       // Tabella UNITA_ORGANIZZATIVA
       "CREATE TABLE IF NOT EXISTS UNITA_ORGANIZZATIVA (
-            Codice VARCHAR(20) PRIMARY KEY,
-            Nome VARCHAR(255) NOT NULL
-        )",
+                Codice VARCHAR(20) PRIMARY KEY,
+                Nome VARCHAR(255) NOT NULL
+            )",
 
       // Tabella SETTORE_SCIENTIFICO
       "CREATE TABLE IF NOT EXISTS SETTORE_SCIENTIFICO (
-            SSD VARCHAR(20) PRIMARY KEY,
-            NomeSettore VARCHAR(100) NOT NULL
-        )",
+                SSD VARCHAR(20) PRIMARY KEY,
+                NomeSettore VARCHAR(100) NOT NULL
+            )",
 
       // Tabella DOCENTE
       "CREATE TABLE IF NOT EXISTS DOCENTE (
-            ID_Docente INT AUTO_INCREMENT PRIMARY KEY,
-            Nome VARCHAR(50) NOT NULL,
-            Cognome VARCHAR(50) NOT NULL,
-            SSD VARCHAR(10) NOT NULL,
-            UnitaOrganizzativa VARCHAR(255) NOT NULL,
-            FOREIGN KEY (SSD) REFERENCES SETTORE_SCIENTIFICO(SSD),
-            FOREIGN KEY (UnitaOrganizzativa) REFERENCES UNITA_ORGANIZZATIVA(Codice)
-        )",
+                ID_Docente INT AUTO_INCREMENT PRIMARY KEY,
+                Nome VARCHAR(50) NOT NULL,
+                Cognome VARCHAR(50) NOT NULL,
+                SSD VARCHAR(10) NOT NULL,
+                UnitaOrganizzativa VARCHAR(255) NOT NULL,
+                FOREIGN KEY (SSD) REFERENCES SETTORE_SCIENTIFICO(SSD),
+                FOREIGN KEY (UnitaOrganizzativa) REFERENCES UNITA_ORGANIZZATIVA(Codice)
+            )",
 
       // Tabella EDIFICIO
       "CREATE TABLE IF NOT EXISTS EDIFICIO (
-            ID_Edificio VARCHAR(40) PRIMARY KEY,
-            Nome VARCHAR(100) NOT NULL,
-            Indirizzo VARCHAR(200) NOT NULL,
-            CapacitaTotale INT NOT NULL CHECK (CapacitaTotale > 0)
-        )",
+                ID_Edificio VARCHAR(40) PRIMARY KEY,
+                Nome VARCHAR(100) NOT NULL,
+                Indirizzo VARCHAR(200) NOT NULL,
+                CapacitaTotale INT NOT NULL CHECK (CapacitaTotale > 0)
+            )",
 
       // Tabella AULA
       "CREATE TABLE IF NOT EXISTS AULA (
-            ID_Aula INT AUTO_INCREMENT PRIMARY KEY,
-            Nome VARCHAR(50) NOT NULL,
-            Capacita INT NOT NULL CHECK (Capacita > 0),
-            Tipologia ENUM('teorica', 'laboratorio') NOT NULL,
-            Edificio VARCHAR(40),
-            FOREIGN KEY (Edificio) REFERENCES EDIFICIO(ID_Edificio)
-        )",
+                ID_Aula INT AUTO_INCREMENT PRIMARY KEY,
+                Nome VARCHAR(50) NOT NULL,
+                Capacita INT NOT NULL CHECK (Capacita > 0),
+                Tipologia ENUM('teorica', 'laboratorio') NOT NULL,
+                Edificio VARCHAR(40),
+                FOREIGN KEY (Edificio) REFERENCES EDIFICIO(ID_Edificio)
+            )",
 
       // Tabella CORSO_DI_STUDIO
       "CREATE TABLE IF NOT EXISTS CORSO_DI_STUDIO (
-            Codice VARCHAR(25) PRIMARY KEY,
-            Nome VARCHAR(100) NOT NULL,
-            Percorso VARCHAR(100),
-            AnnoCorso INT NOT NULL
-        )",
+                Codice VARCHAR(25) PRIMARY KEY,
+                Nome VARCHAR(100) NOT NULL,
+                Percorso VARCHAR(100),
+                AnnoCorso INT NOT NULL
+            )",
 
       // Tabella LINGUE
       "CREATE TABLE IF NOT EXISTS LINGUE (
-            CodiceLingua VARCHAR(5) PRIMARY KEY,
-            NomeLingua VARCHAR(50) NOT NULL
-        )",
+                CodiceLingua VARCHAR(5) PRIMARY KEY,
+                NomeLingua VARCHAR(50) NOT NULL
+            )",
 
       // Tabella PERIODO
       "CREATE TABLE IF NOT EXISTS PERIODO (
-            Periodo VARCHAR(50) PRIMARY KEY DEFAULT 'Ciclo annuale',
-            DataInizio DATE NOT NULL,
-            DataFine DATE NOT NULL
-        )",
+                Periodo VARCHAR(50) PRIMARY KEY,
+                DataInizio DATE NOT NULL,
+                DataFine DATE NOT NULL
+            )",
 
       // Tabella INSEGNAMENTO
       "CREATE TABLE IF NOT EXISTS INSEGNAMENTO (
-            Codice VARCHAR(10) PRIMARY KEY,
-            Nome VARCHAR(100) NOT NULL,
-            AnnoOfferta INT NOT NULL,
-            CFU INT NOT NULL CHECK (CFU > 0),
-            Lingua VARCHAR(5) NOT NULL,
-            SSD VARCHAR(10) NOT NULL,
-            Descrizione TEXT,
-            MetodoEsame TEXT,
-            DocenteTitolare INT,
-            CorsoDiStudio VARCHAR(10),
-            FOREIGN KEY (Lingua) REFERENCES LINGUE(CodiceLingua),
-            FOREIGN KEY (SSD) REFERENCES SETTORE_SCIENTIFICO(SSD),
-            FOREIGN KEY (DocenteTitolare) REFERENCES DOCENTE(ID_Docente),
-            FOREIGN KEY (CorsoDiStudio) REFERENCES CORSO_DI_STUDIO(Codice)
-        )",
+                Codice VARCHAR(10) PRIMARY KEY,
+                Nome VARCHAR(100) NOT NULL,
+                AnnoOfferta INT NOT NULL,
+                CFU INT NOT NULL CHECK (CFU > 0),
+                Lingua VARCHAR(5) NOT NULL,
+                SSD VARCHAR(10) NOT NULL,
+                Descrizione TEXT,
+                MetodoEsame TEXT,
+                DocenteTitolare INT,
+                CorsoDiStudio VARCHAR(10),
+                Periodo VARCHAR(50) NOT NULL,
+                FOREIGN KEY (Lingua) REFERENCES LINGUE(CodiceLingua),
+                FOREIGN KEY (SSD) REFERENCES SETTORE_SCIENTIFICO(SSD),
+                FOREIGN KEY (DocenteTitolare) REFERENCES DOCENTE(ID_Docente),
+                FOREIGN KEY (CorsoDiStudio) REFERENCES CORSO_DI_STUDIO(Codice),
+                FOREIGN KEY (Periodo) REFERENCES PERIODO(Periodo)
+            )",
 
       // Tabella DISPONIBILITA_DOCENTE
       "CREATE TABLE IF NOT EXISTS DISPONIBILITA_DOCENTE (
-            ID_Docente INT NOT NULL,
-            Giorno ENUM('lunedi', 'martedi', 'mercoledi', 'giovedi', 'venerdi') NOT NULL,
-            OraInizio TIME NOT NULL,
-            OraFine TIME NOT NULL,
-            FOREIGN KEY (ID_Docente) REFERENCES DOCENTE(ID_Docente)
-        )",
+                ID_Docente INT NOT NULL,
+                Giorno ENUM('lunedi', 'martedi', 'mercoledi', 'giovedi', 'venerdi') NOT NULL,
+                OraInizio TIME NOT NULL,
+                OraFine TIME NOT NULL,
+                FOREIGN KEY (ID_Docente) REFERENCES DOCENTE(ID_Docente)
+            )",
 
       // Tabella DISPONIBILITA_AULA
       "CREATE TABLE IF NOT EXISTS DISPONIBILITA_AULA (
-            ID_Aula INT NOT NULL,
-            Giorno ENUM('lunedi', 'martedi', 'mercoledi', 'giovedi', 'venerdi') NOT NULL,
-            OraInizio TIME NOT NULL,
-            OraFine TIME NOT NULL,
-            TipologiaUtilizzo ENUM('lezione', 'laboratorio', 'esame') NOT NULL,
-            FOREIGN KEY (ID_Aula) REFERENCES AULA(ID_Aula)
-        )",
+                ID_Aula INT NOT NULL,
+                Giorno ENUM('lunedi', 'martedi', 'mercoledi', 'giovedi', 'venerdi') NOT NULL,
+                OraInizio TIME NOT NULL,
+                OraFine TIME NOT NULL,
+                TipologiaUtilizzo ENUM('lezione', 'laboratorio', 'esame') NOT NULL,
+                FOREIGN KEY (ID_Aula) REFERENCES AULA(ID_Aula)
+            )",
 
       // Tabella ORARIO
       "CREATE TABLE IF NOT EXISTS ORARIO (
-            ID_Orario INT AUTO_INCREMENT PRIMARY KEY,
-            Giorno DATE NOT NULL,
-            OraInizio TIME NOT NULL,
-            OraFine TIME NOT NULL,
-            Aula INT NOT NULL,
-            Insegnamento VARCHAR(10) NOT NULL,
-            Docente INT NOT NULL,
-            FOREIGN KEY (Aula) REFERENCES AULA(ID_Aula),
-            FOREIGN KEY (Insegnamento) REFERENCES INSEGNAMENTO(Codice),
-            FOREIGN KEY (Docente) REFERENCES DOCENTE(ID_Docente)
-        )",
+                ID_Orario INT AUTO_INCREMENT PRIMARY KEY,
+                Giorno DATE NOT NULL,
+                OraInizio TIME NOT NULL,
+                OraFine TIME NOT NULL,
+                Aula INT NOT NULL,
+                Insegnamento VARCHAR(10) NOT NULL,
+                Docente INT NOT NULL,
+                FOREIGN KEY (Aula) REFERENCES AULA(ID_Aula),
+                FOREIGN KEY (Insegnamento) REFERENCES INSEGNAMENTO(Codice),
+                FOREIGN KEY (Docente) REFERENCES DOCENTE(ID_Docente)
+            )",
 
       // Tabella GRUPPO_STUDENTI
       "CREATE TABLE IF NOT EXISTS GRUPPO_STUDENTI (
-            ID_Gruppo INT AUTO_INCREMENT PRIMARY KEY,
-            CodiceCorsoDiStudio VARCHAR(10) NOT NULL,
-            AnnoCorso INT NOT NULL,
-            NumeroStudenti INT NOT NULL CHECK (NumeroStudenti > 0),
-            FOREIGN KEY (CodiceCorsoDiStudio) REFERENCES CORSO_DI_STUDIO(Codice)
-        )",
+                ID_Gruppo INT AUTO_INCREMENT PRIMARY KEY,
+                CodiceCorsoDiStudio VARCHAR(10) NOT NULL,
+                AnnoCorso INT NOT NULL,
+                NumeroStudenti INT NOT NULL CHECK (NumeroStudenti > 0),
+                FOREIGN KEY (CodiceCorsoDiStudio) REFERENCES CORSO_DI_STUDIO(Codice)
+            )",
 
       // Tabella CARICO_LAVORO_DOCENTE
       "CREATE TABLE IF NOT EXISTS CARICO_LAVORO_DOCENTE (
-            ID_Docente INT NOT NULL,
-            Periodo VARCHAR(10) NOT NULL,
-            OreTotali INT NOT NULL CHECK (OreTotali >= 0),
-            MaxOreConsentite INT NOT NULL CHECK (MaxOreConsentite > 0),
-            FOREIGN KEY (ID_Docente) REFERENCES DOCENTE(ID_Docente),
-            FOREIGN KEY (Periodo) REFERENCES PERIODO(Periodo)
-        )",
+                ID_Docente INT NOT NULL,
+                Periodo VARCHAR(50) NOT NULL,
+                OreTotali INT NOT NULL CHECK (OreTotali >= 0),
+                MaxOreConsentite INT NOT NULL CHECK (MaxOreConsentite > 0),
+                FOREIGN KEY (ID_Docente) REFERENCES DOCENTE(ID_Docente),
+                FOREIGN KEY (Periodo) REFERENCES PERIODO(Periodo)
+            )",
 
       // Tabella ORARIO_STORICO
       "CREATE TABLE IF NOT EXISTS ORARIO_STORICO (
-            ID_Storico INT AUTO_INCREMENT PRIMARY KEY,
-            ID_Orario INT NOT NULL,
-            Giorno DATE NOT NULL,
-            OraInizio TIME NOT NULL,
-            OraFine TIME NOT NULL,
-            Aula INT NOT NULL,
-            Insegnamento VARCHAR(10) NOT NULL,
-            Docente INT NOT NULL,
-            DataModifica DATETIME NOT NULL,
-            ModificatoDa INT NOT NULL,
-            FOREIGN KEY (ID_Orario) REFERENCES ORARIO(ID_Orario),
-            FOREIGN KEY (ModificatoDa) REFERENCES AMMINISTRATORE(ID_Amministratore)
-        )",
+                ID_Storico INT AUTO_INCREMENT PRIMARY KEY,
+                ID_Orario INT NOT NULL,
+                Giorno DATE NOT NULL,
+                OraInizio TIME NOT NULL,
+                OraFine TIME NOT NULL,
+                Aula INT NOT NULL,
+                Insegnamento VARCHAR(10) NOT NULL,
+                Docente INT NOT NULL,
+                DataModifica DATETIME NOT NULL,
+                ModificatoDa INT NOT NULL,
+                FOREIGN KEY (ID_Orario) REFERENCES ORARIO(ID_Orario),
+                FOREIGN KEY (ModificatoDa) REFERENCES AMMINISTRATORE(ID_Amministratore)
+            )",
 
       // Tabella AMMINISTRATORE
       "CREATE TABLE IF NOT EXISTS AMMINISTRATORE (
-            ID_Amministratore INT AUTO_INCREMENT PRIMARY KEY,
-            Nome VARCHAR(50) NOT NULL,
-            Cognome VARCHAR(50) NOT NULL,
-            Email VARCHAR(100) NOT NULL UNIQUE,
-            Password VARCHAR(255) NOT NULL
-        )",
+                ID_Amministratore INT AUTO_INCREMENT PRIMARY KEY,
+                Nome VARCHAR(50) NOT NULL,
+                Cognome VARCHAR(50) NOT NULL,
+                Email VARCHAR(100) NOT NULL UNIQUE,
+                Password VARCHAR(255) NOT NULL
+            )",
 
       // Tabella MODIFICA
       "CREATE TABLE IF NOT EXISTS MODIFICA (
-            ID_Modifica INT AUTO_INCREMENT PRIMARY KEY,
-            AmministratoreID INT NOT NULL,
-            Oggetto VARCHAR(200),
-            DataOra DATETIME NOT NULL,
-            Dettaglio TEXT,
-            FOREIGN KEY (AmministratoreID) REFERENCES AMMINISTRATORE(ID_Amministratore)
-        )"
+                ID_Modifica INT AUTO_INCREMENT PRIMARY KEY,
+                AmministratoreID INT NOT NULL,
+                Oggetto VARCHAR(200),
+                DataOra DATETIME NOT NULL,
+                Dettaglio TEXT,
+                FOREIGN KEY (AmministratoreID) REFERENCES AMMINISTRATORE(ID_Amministratore)
+            )"
     ];
 
     foreach ($queries as $query) {
@@ -345,6 +347,155 @@ function CreaTabelle($conn)
     error_log($e->getMessage());
     die("Errore: " . $e->getMessage());
   }
+}
+
+
+// FUNZIONE PER OTTENERE TUTTE LE UNITÀ ORGANIZZATIVE
+function OttieniUnitaOrganizzative()
+{
+  $conn = ApriConnessione();
+  $unitaOrganizzative = [];
+
+  try {
+    $query = "SELECT * FROM UNITA_ORGANIZZATIVA";
+    $result = $conn->query($query);
+
+    if ($result->num_rows > 0) {
+      $unitaOrganizzative = $result->fetch_all(MYSQLI_ASSOC);
+    }
+  } catch (Exception $e) {
+    return "Errore: " . $e->getMessage();
+  } finally {
+    ChiudiConnessione($conn);
+  }
+
+  return $unitaOrganizzative;
+}
+
+// FUNZIONE PER AGGIUNGERE UN'UNITÀ ORGANIZZATIVA
+function AggiungiUnitaOrganizzativa($codice, $nome)
+{
+  $conn = ApriConnessione();
+
+  // Aggiunge automaticamente il prefisso "Dipartimento di"
+  $nomeCompleto = "Dipartimento di " . $nome;
+
+  try {
+    $query = "INSERT INTO UNITA_ORGANIZZATIVA (Codice, Nome) VALUES (?, ?)";
+    $stmt = $conn->prepare($query);
+
+    if ($stmt === false) {
+      throw new Exception("Errore nella preparazione della query: " . $conn->error);
+    }
+
+    $stmt->bind_param("ss", $codice, $nomeCompleto);
+
+    if ($stmt->execute()) {
+      return "Unità organizzativa aggiunta con successo!";
+    } else {
+      throw new Exception("Errore nell'esecuzione della query: " . $stmt->error);
+    }
+  } catch (Exception $e) {
+    return "Errore: " . $e->getMessage();
+  } finally {
+    $stmt->close();
+    ChiudiConnessione($conn);
+  }
+}
+
+// FUNZIONE PER RIMUOVERE UN'UNITÀ ORGANIZZATIVA
+function RimuoviUnitaOrganizzativa($codice)
+{
+    $conn = ApriConnessione();
+
+    try {
+        $query = "DELETE FROM UNITA_ORGANIZZATIVA WHERE Codice = ?";
+        $stmt = $conn->prepare($query);
+
+        if ($stmt === false) {
+            throw new Exception("Errore nella preparazione della query: " . $conn->error);
+        }
+
+        $stmt->bind_param("s", $codice);
+
+        if ($stmt->execute()) {
+            if ($stmt->affected_rows > 0) {
+                return "Unità organizzativa rimossa con successo!";
+            } else {
+                return "Nessuna unità organizzativa trovata con il codice specificato.";
+            }
+        } else {
+            throw new Exception("Errore nell'esecuzione della query: " . $stmt->error);
+        }
+    } catch (Exception $e) {
+        return "Errore: " . $e->getMessage();
+    } finally {
+        $stmt->close();
+        ChiudiConnessione($conn);
+    }
+}
+
+
+// FUNZIONE PER MODIFICARE L'UNITÀ ORGANIZZATIVA
+function ModificaUnitaOrganizzativa($vecchioCodice, $nuovoCodice, $nuovoNome)
+{
+  $conn = ApriConnessione();
+
+  try {
+    // Aggiunge automaticamente il prefisso "Dipartimento di"
+    $nuovoNomeCompleto = "Dipartimento di " . $nuovoNome;
+
+    // Aggiorna il codice e il nome
+    $query = "UPDATE UNITA_ORGANIZZATIVA SET Codice = ?, Nome = ? WHERE Codice = ?";
+    $stmt = $conn->prepare($query);
+
+    if ($stmt === false) {
+      throw new Exception("Errore nella preparazione della query: " . $conn->error);
+    }
+
+    $stmt->bind_param("sss", $nuovoCodice, $nuovoNomeCompleto, $vecchioCodice);
+
+    if ($stmt->execute()) {
+      if ($stmt->affected_rows > 0) {
+        return "Unità organizzativa modificata con successo!";
+      } else {
+        return "Nessuna modifica effettuata. Verifica il codice inserito.";
+      }
+    } else {
+      throw new Exception("Errore nell'esecuzione della query: " . $stmt->error);
+    }
+  } catch (Exception $e) {
+    return "Errore: " . $e->getMessage();
+  } finally {
+    $stmt->close();
+    ChiudiConnessione($conn);
+  }
+}
+
+
+// FUNZIONE PER RECUPERARE UN'UNITÀ ORGANIZZATIVA PER MODIFICA
+function OttieniUnitaOrganizzativaPerModifica($codice)
+{
+  $conn = ApriConnessione();
+  $unita = null;
+
+  try {
+    $query = "SELECT * FROM UNITA_ORGANIZZATIVA WHERE Codice = ?";
+    $stmt = $conn->prepare($query);
+    $stmt->bind_param("s", $codice);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    if ($result->num_rows > 0) {
+      $unita = $result->fetch_assoc();
+    }
+  } catch (Exception $e) {
+    return "Errore: " . $e->getMessage();
+  } finally {
+    ChiudiConnessione($conn);
+  }
+
+  return $unita;
 }
 
 // FUNZIONE PER LA CREAZIONE DEI DOCENTI
