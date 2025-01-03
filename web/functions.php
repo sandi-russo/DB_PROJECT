@@ -406,33 +406,33 @@ function AggiungiUnitaOrganizzativa($codice, $nome)
 // FUNZIONE PER RIMUOVERE UN'UNITÀ ORGANIZZATIVA
 function RimuoviUnitaOrganizzativa($codice)
 {
-    $conn = ApriConnessione();
+  $conn = ApriConnessione();
 
-    try {
-        $query = "DELETE FROM UNITA_ORGANIZZATIVA WHERE Codice = ?";
-        $stmt = $conn->prepare($query);
+  try {
+    $query = "DELETE FROM UNITA_ORGANIZZATIVA WHERE Codice = ?";
+    $stmt = $conn->prepare($query);
 
-        if ($stmt === false) {
-            throw new Exception("Errore nella preparazione della query: " . $conn->error);
-        }
-
-        $stmt->bind_param("s", $codice);
-
-        if ($stmt->execute()) {
-            if ($stmt->affected_rows > 0) {
-                return "Unità organizzativa rimossa con successo!";
-            } else {
-                return "Nessuna unità organizzativa trovata con il codice specificato.";
-            }
-        } else {
-            throw new Exception("Errore nell'esecuzione della query: " . $stmt->error);
-        }
-    } catch (Exception $e) {
-        return "Errore: " . $e->getMessage();
-    } finally {
-        $stmt->close();
-        ChiudiConnessione($conn);
+    if ($stmt === false) {
+      throw new Exception("Errore nella preparazione della query: " . $conn->error);
     }
+
+    $stmt->bind_param("s", $codice);
+
+    if ($stmt->execute()) {
+      if ($stmt->affected_rows > 0) {
+        return "Unità organizzativa rimossa con successo!";
+      } else {
+        return "Nessuna unità organizzativa trovata con il codice specificato.";
+      }
+    } else {
+      throw new Exception("Errore nell'esecuzione della query: " . $stmt->error);
+    }
+  } catch (Exception $e) {
+    return "Errore: " . $e->getMessage();
+  } finally {
+    $stmt->close();
+    ChiudiConnessione($conn);
+  }
 }
 
 
@@ -501,179 +501,276 @@ function OttieniUnitaOrganizzativaPerModifica($codice)
 // FUNZIONE PER INSERIRE UN CORSO DI STUDIO
 function InserisciCorsoDiStudio($codice, $nome, $percorso, $annoCorso)
 {
-    $conn = ApriConnessione();
+  $conn = ApriConnessione();
 
-    try {
-        $query = "INSERT INTO CORSO_DI_STUDIO (Codice, Nome, Percorso, AnnoCorso) VALUES (?, ?, ?, ?)";
-        $stmt = $conn->prepare($query);
+  try {
+    $query = "INSERT INTO CORSO_DI_STUDIO (Codice, Nome, Percorso, AnnoCorso) VALUES (?, ?, ?, ?)";
+    $stmt = $conn->prepare($query);
 
-        if ($stmt === false) {
-            throw new Exception("Errore nella preparazione della query: " . $conn->error);
-        }
-
-        $stmt->bind_param("sssi", $codice, $nome, $percorso, $annoCorso);
-
-        if ($stmt->execute()) {
-            return "Corso di studio inserito con successo!";
-        } else {
-            throw new Exception("Errore nell'inserimento del corso di studio: " . $stmt->error);
-        }
-    } catch (Exception $e) {
-        return "Errore: " . $e->getMessage();
-    } finally {
-        $stmt->close();
-        ChiudiConnessione($conn);
+    if ($stmt === false) {
+      throw new Exception("Errore nella preparazione della query: " . $conn->error);
     }
+
+    $stmt->bind_param("sssi", $codice, $nome, $percorso, $annoCorso);
+
+    if ($stmt->execute()) {
+      return "Corso di studio inserito con successo!";
+    } else {
+      throw new Exception("Errore nell'inserimento del corso di studio: " . $stmt->error);
+    }
+  } catch (Exception $e) {
+    return "Errore: " . $e->getMessage();
+  } finally {
+    $stmt->close();
+    ChiudiConnessione($conn);
+  }
 }
 
 // FUNZIONE PER MODIFICARE I CORSI DI STUDIO
 function ModificaCorsoDiStudio($codice, $nome, $percorso, $annoCorso)
 {
-    $conn = ApriConnessione();
+  $conn = ApriConnessione();
 
-    try {
-        $query = "UPDATE CORSO_DI_STUDIO SET Nome = ?, Percorso = ?, AnnoCorso = ? WHERE Codice = ?";
-        $stmt = $conn->prepare($query);
+  try {
+    $query = "UPDATE CORSO_DI_STUDIO SET Nome = ?, Percorso = ?, AnnoCorso = ? WHERE Codice = ?";
+    $stmt = $conn->prepare($query);
 
-        if ($stmt === false) {
-            throw new Exception("Errore nella preparazione della query: " . $conn->error);
-        }
-
-        $stmt->bind_param("ssis", $nome, $percorso, $annoCorso, $codice);
-
-        if ($stmt->execute()) {
-            if ($stmt->affected_rows > 0) {
-                return "Corso di studio modificato con successo!";
-            } else {
-                return "Nessuna modifica apportata al corso di studio.";
-            }
-        } else {
-            throw new Exception("Errore nella modifica del corso di studio: " . $stmt->error);
-        }
-    } catch (Exception $e) {
-        return "Errore: " . $e->getMessage();
-    } finally {
-        $stmt->close();
-        ChiudiConnessione($conn);
+    if ($stmt === false) {
+      throw new Exception("Errore nella preparazione della query: " . $conn->error);
     }
+
+    $stmt->bind_param("ssis", $nome, $percorso, $annoCorso, $codice);
+
+    if ($stmt->execute()) {
+      if ($stmt->affected_rows > 0) {
+        return "Corso di studio modificato con successo!";
+      } else {
+        return "Nessuna modifica apportata al corso di studio.";
+      }
+    } else {
+      throw new Exception("Errore nella modifica del corso di studio: " . $stmt->error);
+    }
+  } catch (Exception $e) {
+    return "Errore: " . $e->getMessage();
+  } finally {
+    $stmt->close();
+    ChiudiConnessione($conn);
+  }
 }
 
 // FUNZIONE PER ELIMINARE UN CORSO DI STUDIO
 function RimuoviCorsoDiStudio($codice)
 {
-    $conn = ApriConnessione();
+  $conn = ApriConnessione();
 
-    try {
-        $query = "DELETE FROM CORSO_DI_STUDIO WHERE Codice = ?";
-        $stmt = $conn->prepare($query);
+  try {
+    $query = "DELETE FROM CORSO_DI_STUDIO WHERE Codice = ?";
+    $stmt = $conn->prepare($query);
 
-        if ($stmt === false) {
-            throw new Exception("Errore nella preparazione della query: " . $conn->error);
-        }
-
-        $stmt->bind_param("s", $codice);
-
-        if ($stmt->execute()) {
-            if ($stmt->affected_rows > 0) {
-                return "Corso di studio rimosso con successo!";
-            } else {
-                return "Nessun corso di studio trovato con il codice specificato.";
-            }
-        } else {
-            throw new Exception("Errore nell'eliminazione del corso di studio: " . $stmt->error);
-        }
-    } catch (Exception $e) {
-        return "Errore: " . $e->getMessage();
-    } finally {
-        $stmt->close();
-        ChiudiConnessione($conn);
+    if ($stmt === false) {
+      throw new Exception("Errore nella preparazione della query: " . $conn->error);
     }
+
+    $stmt->bind_param("s", $codice);
+
+    if ($stmt->execute()) {
+      if ($stmt->affected_rows > 0) {
+        return "Corso di studio rimosso con successo!";
+      } else {
+        return "Nessun corso di studio trovato con il codice specificato.";
+      }
+    } else {
+      throw new Exception("Errore nell'eliminazione del corso di studio: " . $stmt->error);
+    }
+  } catch (Exception $e) {
+    return "Errore: " . $e->getMessage();
+  } finally {
+    $stmt->close();
+    ChiudiConnessione($conn);
+  }
 }
 
 // FUNZIONE PER OTTENERE TUTTI I CORSI DI STUDIO
 function OttieniCorsiDiStudio()
 {
-    $conn = ApriConnessione();
+  $conn = ApriConnessione();
 
-    try {
-        $query = "SELECT * FROM CORSO_DI_STUDIO";
-        $result = $conn->query($query);
+  try {
+    $query = "SELECT * FROM CORSO_DI_STUDIO";
+    $result = $conn->query($query);
 
-        if ($result === false) {
-            throw new Exception("Errore nella query: " . $conn->error);
-        }
-
-        $corsi = [];
-        while ($row = $result->fetch_assoc()) {
-            $corsi[] = $row;
-        }
-
-        return $corsi;
-    } catch (Exception $e) {
-        return "Errore: " . $e->getMessage();
-    } finally {
-        ChiudiConnessione($conn);
+    if ($result === false) {
+      throw new Exception("Errore nella query: " . $conn->error);
     }
+
+    $corsi = [];
+    while ($row = $result->fetch_assoc()) {
+      $corsi[] = $row;
+    }
+
+    return $corsi;
+  } catch (Exception $e) {
+    return "Errore: " . $e->getMessage();
+  } finally {
+    ChiudiConnessione($conn);
+  }
 }
 
 // Funzione per ottenere tutti i settori scientifici
-function OttieniSettoriScientifici() {
+function OttieniSettoriScientifici()
+{
   $conn = ApriConnessione();
   $sql = "SELECT * FROM SETTORE_SCIENTIFICO";
   $result = $conn->query($sql);
 
   $settori = [];
   while ($row = $result->fetch_assoc()) {
-      $settori[] = $row;
+    $settori[] = $row;
   }
   ChiudiConnessione($conn);
   return $settori;
 }
 
 // Funzione per inserire un settore scientifico
-function InserisciSettoreScientifico($ssd, $nome) {
+function InserisciSettoreScientifico($ssd, $nome)
+{
   $conn = ApriConnessione();
   $sql = "INSERT INTO SETTORE_SCIENTIFICO (SSD, NomeSettore) VALUES (?, ?)";
   $stmt = $conn->prepare($sql);
   $stmt->bind_param("ss", $ssd, $nome);
 
   if ($stmt->execute()) {
-      ChiudiConnessione($conn);
-      return "Settore scientifico inserito con successo!";
+    ChiudiConnessione($conn);
+    return "Settore scientifico inserito con successo!";
   } else {
-      ChiudiConnessione($conn);
-      return "Errore durante l'inserimento del settore scientifico.";
+    ChiudiConnessione($conn);
+    return "Errore durante l'inserimento del settore scientifico.";
   }
 }
 
 // Funzione per rimuovere un settore scientifico
-function RimuoviSettoreScientifico($ssd) {
+function RimuoviSettoreScientifico($ssd)
+{
   $conn = ApriConnessione();
   $sql = "DELETE FROM SETTORE_SCIENTIFICO WHERE SSD = ?";
   $stmt = $conn->prepare($sql);
   $stmt->bind_param("s", $ssd);
 
   if ($stmt->execute()) {
-      ChiudiConnessione($conn);
-      return "Settore scientifico rimosso con successo!";
+    ChiudiConnessione($conn);
+    return "Settore scientifico rimosso con successo!";
   } else {
-      ChiudiConnessione($conn);
-      return "Errore durante la rimozione del settore scientifico.";
+    ChiudiConnessione($conn);
+    return "Errore durante la rimozione del settore scientifico.";
   }
 }
 
 // Funzione per modificare un settore scientifico
-function ModificaSettoreScientifico($ssd, $nuovoNome) {
+function ModificaSettoreScientifico($ssd, $nuovoNome)
+{
   $conn = ApriConnessione();
   $sql = "UPDATE SETTORE_SCIENTIFICO SET NomeSettore = ? WHERE SSD = ?";
   $stmt = $conn->prepare($sql);
   $stmt->bind_param("ss", $nuovoNome, $ssd);
 
   if ($stmt->execute()) {
-      ChiudiConnessione($conn);
-      return "Settore scientifico modificato con successo!";
+    ChiudiConnessione($conn);
+    return "Settore scientifico modificato con successo!";
   } else {
-      ChiudiConnessione($conn);
-      return "Errore durante la modifica del settore scientifico.";
+    ChiudiConnessione($conn);
+    return "Errore durante la modifica del settore scientifico.";
   }
+}
+
+// Funzione per ottenere la lista di tutti gli edifici
+function OttieniEdifici()
+{
+  $conn = ApriConnessione();
+
+  $sql = "SELECT * FROM EDIFICIO";
+  $result = $conn->query($sql);
+
+  $edifici = [];
+  if ($result->num_rows > 0) {
+    while ($row = $result->fetch_assoc()) {
+      $edifici[] = $row;
+    }
+  }
+
+  ChiudiConnessione($conn);
+  return $edifici;
+}
+
+// Funzione per inserire un nuovo edificio
+function InserisciEdificio($idEdificio, $nome, $indirizzo, $capacitaTotale)
+{
+  $conn = ApriConnessione();
+
+  $sql = "INSERT INTO EDIFICIO (ID_Edificio, Nome, Indirizzo, CapacitaTotale)
+          VALUES (?, ?, ?, ?)";
+
+  $stmt = $conn->prepare($sql);
+  $stmt->bind_param("sssi", $idEdificio, $nome, $indirizzo, $capacitaTotale);
+
+  if ($stmt->execute()) {
+    $message = "Edificio inserito con successo!";
+  } else {
+    $message = "Errore nell'inserimento dell'edificio: " . $stmt->error;
+  }
+
+  $stmt->close();
+  ChiudiConnessione($conn);
+  return $message;
+}
+
+// Funzione per modificare un edificio
+function ModificaEdificio($vecchioCodice, $nuovoCodice, $nome, $indirizzo, $capacitaTotale)
+{
+  // Controllo se CapacitaTotale è un numero valido
+  if (!is_numeric($capacitaTotale)) {
+    return "Errore: la capacità totale deve essere un numero valido!";
+  }
+
+  $conn = ApriConnessione();
+
+  // Prepara la query di aggiornamento
+  $sql = "UPDATE EDIFICIO SET ID_Edificio = ?, Nome = ?, Indirizzo = ?, CapacitaTotale = ? 
+            WHERE ID_Edificio = ?";
+
+  $stmt = $conn->prepare($sql);
+  $stmt->bind_param("ssssi", $nuovoCodice, $nome, $indirizzo, $capacitaTotale, $vecchioCodice);
+
+  // Esegui la query
+  if ($stmt->execute()) {
+    $message = "Edificio modificato con successo!";
+  } else {
+    $message = "Errore nella modifica dell'edificio: " . $stmt->error;
+  }
+
+  $stmt->close();
+  ChiudiConnessione($conn);
+  return $message;
+}
+
+
+
+// Funzione per rimuovere un edificio
+function RimuoviEdificio($idEdificio)
+{
+  $conn = ApriConnessione();
+
+  $sql = "DELETE FROM EDIFICIO WHERE ID_Edificio = ?";
+
+  $stmt = $conn->prepare($sql);
+  $stmt->bind_param("s", $idEdificio);
+
+  if ($stmt->execute()) {
+    $message = "Edificio rimosso con successo!";
+  } else {
+    $message = "Errore nella rimozione dell'edificio: " . $stmt->error;
+  }
+
+  $stmt->close();
+  ChiudiConnessione($conn);
+  return $message;
 }
