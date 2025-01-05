@@ -8,7 +8,6 @@ $edifici = OttieniEdifici();
 // Se è stato inviato un codice per la modifica
 if (isset($_GET['edit'])) {
     $codice = $_GET['edit'];
-    // Trova l'edificio specifico per la modifica
     foreach ($edifici as $edificio) {
         if ($edificio['ID_Edificio'] === $codice) {
             $edificioInModifica = $edificio;
@@ -19,48 +18,56 @@ if (isset($_GET['edit'])) {
 
 // Gestione del modulo di modifica
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['submit_modifica'])) {
-    // Recupera i dati dal modulo
     $vecchioCodice = $_POST['vecchio_codice'];
-    $nuovoCodice = $_POST['nuovo_codice'];
     $nome = $_POST['nome'];
     $indirizzo = $_POST['indirizzo'];
     $capacitaTotale = $_POST['capacita_totale'];
 
-    // Rimuovi l'edificio vecchio e inserisci quello aggiornato
+    // Generazione del codice edificio
+    $prefisso = '';
+    if ($indirizzo === 'Viale Ferdinando Stagno d\'Alcontres 31 (Papardo)') {
+        $prefisso = 'PAP';
+    } elseif ($indirizzo === 'Piazza Pugliatti, 1 (Centro)') {
+        $prefisso = 'CENT';
+    } elseif ($indirizzo === 'Viale Giovanni Palatucci, 13 (Annunziata)') {
+        $prefisso = 'ANN';
+    }
+    $nuovoCodice = $prefisso . '-ED-' . strtoupper($nome);
+
+    // Aggiungi "EDIFICIO" al nome
+    $nomeCompleto = 'EDIFICIO ' . strtoupper($nome);
+
     $message = RimuoviEdificio($vecchioCodice);
     if (strpos($message, 'successo') !== false) {
-        $message = InserisciEdificio($nuovoCodice, $nome, $indirizzo, $capacitaTotale);
+        $message = InserisciEdificio($nuovoCodice, $nomeCompleto, $indirizzo, $capacitaTotale);
     }
 
-    // Ricarica la pagina con il messaggio
-    header("Location: edificio.php?message=" . urlencode($message));
-    exit;
-}
-
-// Gestione del modulo di eliminazione
-if (isset($_GET['delete'])) {
-    $codice = $_GET['delete'];
-
-    // Chiamata alla funzione di rimozione
-    $message = RimuoviEdificio($codice);
-
-    // Ricarica la pagina con il messaggio
     header("Location: edificio.php?message=" . urlencode($message));
     exit;
 }
 
 // Gestione del modulo di creazione
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['submit_creazione'])) {
-    // Aggiungi un nuovo edificio
-    $codice = $_POST['codice'];
     $nome = $_POST['nome'];
     $indirizzo = $_POST['indirizzo'];
     $capacitaTotale = $_POST['capacita_totale'];
 
-    // Chiamata alla funzione di aggiunta
-    $message = InserisciEdificio($codice, $nome, $indirizzo, $capacitaTotale);
+    // Generazione del codice edificio
+    $prefisso = '';
+    if ($indirizzo === 'Viale Ferdinando Stagno d\'Alcontres 31 (Papardo)') {
+        $prefisso = 'PAP';
+    } elseif ($indirizzo === 'Piazza Pugliatti, 1 (Centro)') {
+        $prefisso = 'CENT';
+    } elseif ($indirizzo === 'Viale Giovanni Palatucci, 13 (Annunziata)') {
+        $prefisso = 'ANN';
+    }
+    $codice = $prefisso . '-ED-' . strtoupper($nome);
 
-    // Ricarica la pagina per aggiornare la lista
+    // Aggiungi "EDIFICIO" al nome
+    $nomeCompleto = 'EDIFICIO ' . strtoupper($nome);
+
+    $message = InserisciEdificio($codice, $nomeCompleto, $indirizzo, $capacitaTotale);
+
     header("Location: edificio.php?message=" . urlencode($message));
     exit;
 }
@@ -87,14 +94,17 @@ if (isset($_GET['message'])) {
         <!-- Sezione per creare un nuovo edificio -->
         <h2>Aggiungi Nuovo Edificio</h2>
         <form method="POST">
-            <label for="codice">Codice Edificio:</label>
-            <input type="text" id="codice" name="codice" required>
-
             <label for="nome">Nome Edificio:</label>
             <input type="text" id="nome" name="nome" required>
 
             <label for="indirizzo">Indirizzo:</label>
-            <input type="text" id="indirizzo" name="indirizzo" required>
+            <select id="indirizzo" name="indirizzo" required>
+                <option value="Viale Ferdinando Stagno d'Alcontres 31 (Papardo)">Viale Ferdinando Stagno d'Alcontres 31
+                    (Papardo)</option>
+                <option value="Piazza Pugliatti, 1 (Centro)">Piazza Pugliatti, 1 (Centro)</option>
+                <option value="Viale Giovanni Palatucci, 13 (Annunziata)">Viale Giovanni Palatucci, 13 (Annunziata)
+                </option>
+            </select>
 
             <label for="capacita_totale">Capacità Totale:</label>
             <input type="number" id="capacita_totale" name="capacita_totale" required min="0" step="any">
@@ -109,17 +119,16 @@ if (isset($_GET['message'])) {
                 <input type="hidden" name="vecchio_codice"
                     value="<?php echo htmlspecialchars($edificioInModifica['ID_Edificio']); ?>">
 
-                <label for="nuovo_codice">Nuovo Codice Edificio:</label>
-                <input type="text" id="nuovo_codice" name="nuovo_codice"
-                    value="<?php echo htmlspecialchars($edificioInModifica['ID_Edificio']); ?>" required>
-
                 <label for="nome">Nome Edificio:</label>
                 <input type="text" id="nome" name="nome"
                     value="<?php echo htmlspecialchars($edificioInModifica['Nome']); ?>" required>
 
                 <label for="indirizzo">Indirizzo:</label>
-                <input type="text" id="indirizzo" name="indirizzo"
-                    value="<?php echo htmlspecialchars($edificioInModifica['Indirizzo']); ?>" required>
+                <select id="indirizzo" name="indirizzo" required>
+                    <option value="Viale Ferdinando Stagno d'Alcontres 31 (Papardo)" <?php echo ($edificioInModifica['Indirizzo'] === 'Viale Ferdinando Stagno d\'Alcontres 31 (Papardo)') ? 'selected' : ''; ?>>Viale Ferdinando Stagno d'Alcontres 31 (Papardo)</option>
+                    <option value="Piazza Pugliatti, 1 (Centro)" <?php echo ($edificioInModifica['Indirizzo'] === 'Piazza Pugliatti, 1 (Centro)') ? 'selected' : ''; ?>>Piazza Pugliatti, 1 (Centro)</option>
+                    <option value="Viale Giovanni Palatucci, 13 (Annunziata)" <?php echo ($edificioInModifica['Indirizzo'] === 'Viale Giovanni Palatucci, 13 (Annunziata)') ? 'selected' : ''; ?>>Viale Giovanni Palatucci, 13 (Annunziata)</option>
+                </select>
 
                 <label for="capacita_totale">Capacità Totale:</label>
                 <input type="number" id="capacita_totale" name="capacita_totale"
@@ -149,13 +158,11 @@ if (isset($_GET['message'])) {
                             <td><?php echo htmlspecialchars($edificio['Indirizzo']); ?></td>
                             <td><?php echo htmlspecialchars($edificio['CapacitaTotale']); ?></td>
                             <td>
-                                <a href="edificio.php?edit=<?php echo htmlspecialchars($edificio['ID_Edificio']); ?>">
-                                    <button>Modifica</button>
-                                </a>
+                                <a
+                                    href="edificio.php?edit=<?php echo htmlspecialchars($edificio['ID_Edificio']); ?>"><button>Modifica</button></a>
                                 <a href="edificio.php?delete=<?php echo htmlspecialchars($edificio['ID_Edificio']); ?>"
-                                    onclick="return confirm('Sei sicuro di voler eliminare questo edificio?');">
-                                    <button class="delete">Rimuovi</button>
-                                </a>
+                                    onclick="return confirm('Sei sicuro di voler eliminare questo edificio?');"><button
+                                        class="delete">Rimuovi</button></a>
                             </td>
                         </tr>
                     <?php endforeach; ?>
