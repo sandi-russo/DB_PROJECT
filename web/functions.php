@@ -616,7 +616,7 @@ function OttieniCorsiDiStudio()
   }
 }
 
-// Funzione per ottenere tutti i settori scientifici
+// FUNZIONE PER OTTENERE I SETTORI SCIENTIFICI
 function OttieniSettoriScientifici()
 {
   $conn = ApriConnessione();
@@ -631,7 +631,7 @@ function OttieniSettoriScientifici()
   return $settori;
 }
 
-// Funzione per inserire un settore scientifico
+// FUNZIONE PER INSERIRE UN SETTORE SCIENTIFICO
 function InserisciSettoreScientifico($ssd, $nome)
 {
   $conn = ApriConnessione();
@@ -648,7 +648,7 @@ function InserisciSettoreScientifico($ssd, $nome)
   }
 }
 
-// Funzione per rimuovere un settore scientifico
+// FUZNZIONE PER RIMUOVERE UN SETTORE SCIENTIFICO
 function RimuoviSettoreScientifico($ssd)
 {
   $conn = ApriConnessione();
@@ -665,7 +665,7 @@ function RimuoviSettoreScientifico($ssd)
   }
 }
 
-// Funzione per modificare un settore scientifico
+// FUNZIONE PER MODIFICARE IL SETTORE SCIENTIFICO
 function ModificaSettoreScientifico($ssd, $nuovoNome)
 {
   $conn = ApriConnessione();
@@ -682,7 +682,7 @@ function ModificaSettoreScientifico($ssd, $nuovoNome)
   }
 }
 
-// Funzione per ottenere la lista di tutti gli edifici
+// FUNZIONE PER OTTENERE LA LISTA DI TUTTI GLI EDIFICI
 function OttieniEdifici()
 {
   $conn = ApriConnessione();
@@ -701,7 +701,7 @@ function OttieniEdifici()
   return $edifici;
 }
 
-// Funzione per inserire un nuovo edificio
+// FUNZIONE PER INSERIRE UN EDIFICIO
 function InserisciEdificio($idEdificio, $nome, $indirizzo, $capacitaTotale)
 {
   $conn = ApriConnessione();
@@ -723,7 +723,7 @@ function InserisciEdificio($idEdificio, $nome, $indirizzo, $capacitaTotale)
   return $message;
 }
 
-// Funzione per modificare un edificio
+// FUNZIONE PER MODIFICARE UN EDIFICIO
 function ModificaEdificio($vecchioCodice, $nuovoCodice, $nome, $indirizzo, $capacitaTotale)
 {
   // Controllo se CapacitaTotale è un numero valido
@@ -753,8 +753,7 @@ function ModificaEdificio($vecchioCodice, $nuovoCodice, $nome, $indirizzo, $capa
 }
 
 
-
-// Funzione per rimuovere un edificio
+// FUNZIONE PER RIMUOVERE UN EDIFICIO
 function RimuoviEdificio($idEdificio)
 {
   $conn = ApriConnessione();
@@ -768,6 +767,60 @@ function RimuoviEdificio($idEdificio)
     $message = "Edificio rimosso con successo!";
   } else {
     $message = "Errore nella rimozione dell'edificio: " . $stmt->error;
+  }
+
+  $stmt->close();
+  ChiudiConnessione($conn);
+  return $message;
+}
+
+// FUNZIONE PER OTTENERE TUTTE LE LINGUE
+function OttieniLingue()
+{
+  $conn = ApriConnessione();
+  $query = "SELECT * FROM LINGUE";
+  $result = $conn->query($query);
+
+  $lingue = [];
+  while ($row = $result->fetch_assoc()) {
+    $lingue[] = $row;
+  }
+
+  ChiudiConnessione($conn);
+  return $lingue;
+}
+
+// FUNZIONE PER INSERIRE UNA LINGUA
+function InserisciLingua($codiceLingua, $nomeLingua)
+{
+  $conn = ApriConnessione();
+  $query = "INSERT INTO LINGUE (CodiceLingua, NomeLingua) VALUES (?, ?)";
+  $stmt = $conn->prepare($query);
+  $stmt->bind_param("ss", $codiceLingua, $nomeLingua);
+
+  if ($stmt->execute()) {
+    $message = "Lingua aggiunta con successo!";
+  } else {
+    $message = "Errore nell'inserimento della lingua: " . $conn->error;
+  }
+
+  $stmt->close();
+  ChiudiConnessione($conn);
+  return $message;
+}
+
+// FUNZIONE PER MODIFICARE UNA LINGUA
+function RimuoviLingua($codiceLingua)
+{
+  $conn = ApriConnessione();
+  $query = "DELETE FROM LINGUE WHERE CodiceLingua = ?";
+  $stmt = $conn->prepare($query);
+  $stmt->bind_param("s", $codiceLingua);
+
+  if ($stmt->execute()) {
+    $message = "Lingua rimossa con successo!";
+  } else {
+    $message = "Errore nella rimozione della lingua: " . $conn->error;
   }
 
   $stmt->close();
