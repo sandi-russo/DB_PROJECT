@@ -150,7 +150,6 @@ function CreaAmministratore($nome, $cognome, $email, $password)
   }
 }
 
-
 // FUNZIONE PER LA CREAZIONE DELLE TABELLE NEL DATABASE
 function CreaTabelle($conn)
 {
@@ -326,51 +325,95 @@ function CreaTabelle($conn)
                 DataOra DATETIME NOT NULL,
                 Dettaglio TEXT,
                 FOREIGN KEY (AmministratoreID) REFERENCES AMMINISTRATORE(ID_Amministratore)
-            )",
-      
-      // Vincoli (senza IF NOT EXISTS)
-      "ALTER TABLE UNITA_ORGANIZZATIVA
-       ADD CONSTRAINT chk_codice_formato 
-       CHECK (Codice REGEXP '^[A-Z]{3,20}$')",
-
-      "ALTER TABLE SETTORE_SCIENTIFICO
-       ADD CONSTRAINT chk_ssd_formato 
-       CHECK (SSD REGEXP '^[A-Z]{3,12}/[0-9]{2}$')",
-
-      "ALTER TABLE DOCENTE
-       ADD CONSTRAINT chk_nome_docente CHECK (Nome NOT REGEXP '[0-9]'),
-       ADD CONSTRAINT chk_cognome_docente CHECK (Cognome NOT REGEXP '[0-9]')",
-
-      "ALTER TABLE EDIFICIO
-       ADD CONSTRAINT chk_capacita_max 
-       CHECK (CapacitaTotale <= 10000)",
-
-      "ALTER TABLE CORSO_DI_STUDIO
-       ADD CONSTRAINT chk_anno_corso 
-       CHECK (AnnoCorso BETWEEN 1 AND 6)",
-
-      "ALTER TABLE PERIODO
-       ADD CONSTRAINT chk_date_periodo 
-       CHECK (DataInizio < DataFine)",
-
-      "ALTER TABLE DISPONIBILITA_DOCENTE
-       ADD CONSTRAINT chk_orario_valido_doc 
-       CHECK (OraFine > OraInizio)",
-
-      "ALTER TABLE DISPONIBILITA_AULA
-       ADD CONSTRAINT chk_orario_valido_aula 
-       CHECK (OraFine > OraInizio)",
-
-      "ALTER TABLE CARICO_LAVORO_DOCENTE
-       ADD CONSTRAINT chk_ore_coerenti 
-       CHECK (OreTotali <= MaxOreConsentite)"
+            )"
     ];
 
+    // Esegui le query per creare le tabelle
     foreach ($queries as $query) {
       if ($conn->query($query) === TRUE) {
         echo "Query eseguita correttamente!<br>";
       } else {
         echo "Errore nell'esecuzione della query: " . $conn->error . "<br>";
+      }
+    }
+
+    // Esegui i trigger separatamente
+    $triggers = [
+      "CREATE TRIGGER trg_chk_orario_docente
+      BEFORE INSERT ON DISPONIBILITA_DOCENTE
+      FOR EACH ROW
+      BEGIN
+          IF NEW.OraFine <= NEW.OraInizio THEN
+              SIGNAL SQLSTATE '45000'
+              SET MESSAGE_TEXT = 'L\'ora finale non può essere minore o uguale all\'ora di inizio.';
+          END IF;
+      END",
+
+      "CREATE TRIGGER trg_chk_orario_aula
+      BEFORE INSERT ON DISPONIBILITA_AULA
+      FOR EACH ROW
+      BEGIN
+          IF NEW.OraFine <= NEW.OraInizio THEN
+              SIGNAL SQLSTATE '45000'
+              SET MESSAGE_TEXT = 'L\'ora finale non può essere minore o uguale all\'ora di inizio.';
+          END IF;
+      END",
+
+      "CREATE TRIGGER trg_chk_capacita_aula
+      BEFORE INSERT ON AULA
+      FOR EACH ROW
+      BEGIN
+          DECLARE capacita_edificio INT;
+
+          -- Ottieni la capacità totale dell'edificio associato
+          SELECT CapacitaTotale INTO capacita_edificio
+          FROM EDIFICIO
+          WHERE ID_Edificio = NEW.Edificio;
+
+          -- Verifica che la Capacita dell'aula non superi la CapacitaTotale dell'edificio
+          IF NEW.Capacita > capacita_edificio THEN
+              SIGNAL SQLSTATE '45000'
+              SET MESSAGE_TEXT = 'La capacità dell\'aula non può superare la capacità totale dell\'edificio.';
+          END IF;
+      END",
+
+      "CREATE TRIGGER trg_chk_date_periodo
+      BEFORE INSERT ON PERIODO
+      FOR EACH ROW
+      BEGIN
+          IF NEW.DataInizio >= NEW.DataFine THEN
+              SIGNAL SQLSTATE '45000'
+              SET MESSAGE_TEXT = 'La data di inizio non può essere uguale o successiva alla data di fine.';
+          END IF;
+      END",
+
+      "CREATE TRIGGER trg_chk_anno_corso
+      BEFORE INSERT ON CORSO_DI_STUDIO
+      FOR EACH ROW
+      BEGIN
+          IF NEW.AnnoCorso < 1 OR NEW.AnnoCorso > 6 THEN
+              SIGNAL SQLSTATE '45000'
+              SET MESSAGE_TEXT = 'L\'anno del corso deve essere compreso tra 1 e 6.';
+          END IF;
+      END",
+
+      "CREATE TRIGGER trg_chk_capacita_max_edificio
+      BEFORE INSERT ON EDIFICIO
+      FOR EACH ROW
+      BEGIN
+          IF NEW.CapacitaTotale > 10000 THEN
+              SIGNAL SQLSTATE '45000'
+              SET MESSAGE_TEXT = 'La capacità totale dell\'edificio non può superare 10.000.';
+          END IF;
+      END"
+    ];
+
+    // Esegui le query per i trigger
+    foreach ($triggers as $trigger) {
+      if ($conn->query($trigger) === TRUE) {
+        echo "Trigger eseguito correttamente!<br>";
+      } else {
+        echo "Errore nell'esecuzione del trigger: " . $conn->error . "<br>";
       }
     }
 
@@ -381,7 +424,6 @@ function CreaTabelle($conn)
     die("Errore: " . $e->getMessage());
   }
 }
-
 
 // FUNZIONE PER OTTENERE TUTTE LE UNITÀ ORGANIZZATIVE
 function OttieniUnitaOrganizzative()
@@ -468,7 +510,6 @@ function RimuoviUnitaOrganizzativa($codice)
   }
 }
 
-
 // FUNZIONE PER MODIFICARE L'UNITÀ ORGANIZZATIVA
 function ModificaUnitaOrganizzativa($vecchioCodice, $nuovoCodice, $nuovoNome)
 {
@@ -504,7 +545,6 @@ function ModificaUnitaOrganizzativa($vecchioCodice, $nuovoCodice, $nuovoNome)
     ChiudiConnessione($conn);
   }
 }
-
 
 // FUNZIONE PER RECUPERARE UN'UNITÀ ORGANIZZATIVA PER MODIFICA
 function OttieniUnitaOrganizzativaPerModifica($codice)
@@ -784,7 +824,6 @@ function ModificaEdificio($vecchioCodice, $nuovoCodice, $nome, $indirizzo, $capa
   ChiudiConnessione($conn);
   return $message;
 }
-
 
 // FUNZIONE PER RIMUOVERE UN EDIFICIO
 function RimuoviEdificio($idEdificio)
