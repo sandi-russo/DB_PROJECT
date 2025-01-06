@@ -151,14 +151,11 @@ function CreaAmministratore($nome, $cognome, $email, $password)
 }
 
 
-
 // FUNZIONE PER LA CREAZIONE DELLE TABELLE NEL DATABASE
 function CreaTabelle($conn)
 {
   try {
-    // Apri la connessione al database
     $conn = ApriConnessione();
-
     echo "Connessione al database avvenuta con successo!<br>";
 
     $queries = [
@@ -246,36 +243,36 @@ function CreaTabelle($conn)
 
       // Tabella DISPONIBILITA_DOCENTE
       "CREATE TABLE IF NOT EXISTS DISPONIBILITA_DOCENTE (
-                ID_Docente INT NOT NULL,
-                Giorno ENUM('lunedi', 'martedi', 'mercoledi', 'giovedi', 'venerdi') NOT NULL,
-                OraInizio TIME NOT NULL,
-                OraFine TIME NOT NULL,
-                FOREIGN KEY (ID_Docente) REFERENCES DOCENTE(ID_Docente)
-            )",
+        ID_Docente INT NOT NULL,
+        Giorno ENUM('lunedi', 'martedi', 'mercoledi', 'giovedi', 'venerdi') NOT NULL,
+        OraInizio TIME NOT NULL CHECK (OraInizio >= '09:00:00' AND OraInizio <= '16:00:00'),
+        OraFine TIME NOT NULL CHECK (OraFine >= '11:00:00' AND OraFine <= '18:00:00'),
+        FOREIGN KEY (ID_Docente) REFERENCES DOCENTE(ID_Docente)
+      )",
 
       // Tabella DISPONIBILITA_AULA
       "CREATE TABLE IF NOT EXISTS DISPONIBILITA_AULA (
-                ID_Aula INT NOT NULL,
-                Giorno ENUM('lunedi', 'martedi', 'mercoledi', 'giovedi', 'venerdi') NOT NULL,
-                OraInizio TIME NOT NULL,
-                OraFine TIME NOT NULL,
-                TipologiaUtilizzo ENUM('lezione', 'laboratorio', 'esame') NOT NULL,
-                FOREIGN KEY (ID_Aula) REFERENCES AULA(ID_Aula)
-            )",
+        ID_Aula INT NOT NULL,
+        Giorno ENUM('lunedi', 'martedi', 'mercoledi', 'giovedi', 'venerdi') NOT NULL,
+        OraInizio TIME NOT NULL CHECK (OraInizio >= '09:00:00' AND OraInizio <= '16:00:00'),
+        OraFine TIME NOT NULL CHECK (OraFine >= '11:00:00' AND OraFine <= '18:00:00'),
+        TipologiaUtilizzo ENUM('lezione', 'laboratorio', 'esame') NOT NULL,
+        FOREIGN KEY (ID_Aula) REFERENCES AULA(ID_Aula)
+      )",
 
       // Tabella ORARIO
       "CREATE TABLE IF NOT EXISTS ORARIO (
-                ID_Orario INT AUTO_INCREMENT PRIMARY KEY,
-                Giorno DATE NOT NULL,
-                OraInizio TIME NOT NULL,
-                OraFine TIME NOT NULL,
-                Aula INT NOT NULL,
-                Insegnamento VARCHAR(10) NOT NULL,
-                Docente INT NOT NULL,
-                FOREIGN KEY (Aula) REFERENCES AULA(ID_Aula),
-                FOREIGN KEY (Insegnamento) REFERENCES INSEGNAMENTO(Codice),
-                FOREIGN KEY (Docente) REFERENCES DOCENTE(ID_Docente)
-            )",
+        ID_Orario INT AUTO_INCREMENT PRIMARY KEY,
+        Giorno DATE NOT NULL,
+        OraInizio TIME NOT NULL CHECK (OraInizio >= '09:00:00' AND OraInizio <= '16:00:00'),
+        OraFine TIME NOT NULL CHECK (OraFine >= '11:00:00' AND OraFine <= '18:00:00'),
+        Aula INT NOT NULL,
+        Insegnamento VARCHAR(10) NOT NULL,
+        Docente INT NOT NULL,
+        FOREIGN KEY (Aula) REFERENCES AULA(ID_Aula),
+        FOREIGN KEY (Insegnamento) REFERENCES INSEGNAMENTO(Codice),
+        FOREIGN KEY (Docente) REFERENCES DOCENTE(ID_Docente)
+      )",
 
       // Tabella GRUPPO_STUDENTI
       "CREATE TABLE IF NOT EXISTS GRUPPO_STUDENTI (
@@ -329,18 +326,54 @@ function CreaTabelle($conn)
                 DataOra DATETIME NOT NULL,
                 Dettaglio TEXT,
                 FOREIGN KEY (AmministratoreID) REFERENCES AMMINISTRATORE(ID_Amministratore)
-            )"
+            )",
+      
+      // Vincoli (senza IF NOT EXISTS)
+      "ALTER TABLE UNITA_ORGANIZZATIVA
+       ADD CONSTRAINT chk_codice_formato 
+       CHECK (Codice REGEXP '^[A-Z]{3,20}$')",
+
+      "ALTER TABLE SETTORE_SCIENTIFICO
+       ADD CONSTRAINT chk_ssd_formato 
+       CHECK (SSD REGEXP '^[A-Z]{3,12}/[0-9]{2}$')",
+
+      "ALTER TABLE DOCENTE
+       ADD CONSTRAINT chk_nome_docente CHECK (Nome NOT REGEXP '[0-9]'),
+       ADD CONSTRAINT chk_cognome_docente CHECK (Cognome NOT REGEXP '[0-9]')",
+
+      "ALTER TABLE EDIFICIO
+       ADD CONSTRAINT chk_capacita_max 
+       CHECK (CapacitaTotale <= 10000)",
+
+      "ALTER TABLE CORSO_DI_STUDIO
+       ADD CONSTRAINT chk_anno_corso 
+       CHECK (AnnoCorso BETWEEN 1 AND 6)",
+
+      "ALTER TABLE PERIODO
+       ADD CONSTRAINT chk_date_periodo 
+       CHECK (DataInizio < DataFine)",
+
+      "ALTER TABLE DISPONIBILITA_DOCENTE
+       ADD CONSTRAINT chk_orario_valido_doc 
+       CHECK (OraFine > OraInizio)",
+
+      "ALTER TABLE DISPONIBILITA_AULA
+       ADD CONSTRAINT chk_orario_valido_aula 
+       CHECK (OraFine > OraInizio)",
+
+      "ALTER TABLE CARICO_LAVORO_DOCENTE
+       ADD CONSTRAINT chk_ore_coerenti 
+       CHECK (OreTotali <= MaxOreConsentite)"
     ];
 
     foreach ($queries as $query) {
       if ($conn->query($query) === TRUE) {
-        echo "Tabella creata correttamente!<br>";
+        echo "Query eseguita correttamente!<br>";
       } else {
-        echo "Errore nella creazione della tabella: " . $conn->error . "<br>";
+        echo "Errore nell'esecuzione della query: " . $conn->error . "<br>";
       }
     }
 
-    // Chiudi la connessione al database
     ChiudiConnessione($conn);
 
   } catch (Exception $e) {
@@ -809,7 +842,7 @@ function InserisciLingua($codiceLingua, $nomeLingua)
   return $message;
 }
 
-// FUNZIONE PER MODIFICARE UNA LINGUA
+// FUNZIONE PER RIMUOVERE UNA LINGUA
 function RimuoviLingua($codiceLingua)
 {
   $conn = ApriConnessione();
