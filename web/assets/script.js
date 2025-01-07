@@ -35,3 +35,28 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 });
+
+// Funzione per caricare gli edifici in base all'indirizzo selezionato
+function caricaEdifici() {
+  const indirizzo = document.getElementById("indirizzo").value;
+  const edificioSelect = document.getElementById("edificio");
+
+  // Resetta il menu a tendina degli edifici
+  edificioSelect.innerHTML = '<option value="">Seleziona un edificio</option>';
+
+  if (indirizzo) {
+    fetch(`get_edifici.php?indirizzo=${encodeURIComponent(indirizzo)}`)
+      .then((response) => response.json())
+      .then((data) => {
+        data.forEach((edificio) => {
+          const option = document.createElement("option");
+          option.value = edificio.ID_Edificio;
+          option.textContent = edificio.Nome;
+          edificioSelect.appendChild(option);
+        });
+      })
+      .catch((error) =>
+        console.error("Errore nel caricamento degli edifici:", error)
+      );
+  }
+}

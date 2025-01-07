@@ -899,3 +899,87 @@ function RimuoviLingua($codiceLingua)
   ChiudiConnessione($conn);
   return $message;
 }
+
+// FUNZIONE PER OTTENERE LA LISTA DI TUTTE LE AULE
+function OttieniAule()
+{
+  $conn = ApriConnessione();
+
+  $sql = "SELECT * FROM AULA";
+  $result = $conn->query($sql);
+
+  $aule = [];
+  if ($result->num_rows > 0) {
+    while ($row = $result->fetch_assoc()) {
+      $aule[] = $row;
+    }
+  }
+
+  ChiudiConnessione($conn);
+  return $aule;
+}
+
+// FUNZIONE PER INSERIRE UN'AULA
+function InserisciAula($nome, $capacita, $tipologia, $edificio)
+{
+  $conn = ApriConnessione();
+
+  $sql = "INSERT INTO AULA (Nome, Capacita, Tipologia, Edificio)
+          VALUES (?, ?, ?, ?)";
+
+  $stmt = $conn->prepare($sql);
+  $stmt->bind_param("siss", $nome, $capacita, $tipologia, $edificio);
+
+  if ($stmt->execute()) {
+    $message = "Aula inserita con successo!";
+  } else {
+    $message = "Errore nell'inserimento dell'aula: " . $stmt->error;
+  }
+
+  $stmt->close();
+  ChiudiConnessione($conn);
+  return $message;
+}
+
+// FUNZIONE PER MODIFICARE UN'AULA
+function ModificaAula($idAula, $nome, $capacita, $tipologia, $edificio)
+{
+  $conn = ApriConnessione();
+
+  $sql = "UPDATE AULA SET Nome = ?, Capacita = ?, Tipologia = ?, Edificio = ?
+          WHERE ID_Aula = ?";
+
+  $stmt = $conn->prepare($sql);
+  $stmt->bind_param("sissi", $nome, $capacita, $tipologia, $edificio, $idAula);
+
+  if ($stmt->execute()) {
+    $message = "Aula modificata con successo!";
+  } else {
+    $message = "Errore nella modifica dell'aula: " . $stmt->error;
+  }
+
+  $stmt->close();
+  ChiudiConnessione($conn);
+  return $message;
+}
+
+// FUNZIONE PER RIMUOVERE UN'AULA
+function RimuoviAula($idAula)
+{
+  $conn = ApriConnessione();
+
+  $sql = "DELETE FROM AULA WHERE ID_Aula = ?";
+
+  $stmt = $conn->prepare($sql);
+  $stmt->bind_param("i", $idAula);
+
+  if ($stmt->execute()) {
+    $message = "Aula rimossa con successo!";
+  } else {
+    $message = "Errore nella rimozione dell'aula: " . $stmt->error;
+  }
+
+  $stmt->close();
+  ChiudiConnessione($conn);
+  return $message;
+}
