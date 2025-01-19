@@ -1,16 +1,21 @@
 <?php
-require_once 'functions.php'; // Funzioni di gestione database
+require_once 'functions.php'; // Funzioni di gestione database e utility
 require_once 'auth.php'; // Autenticazione utente
+
+// Recupera la lista degli indirizzi disponibili dal database o da un array predefinito
+$indirizziDisponibili = OttieniIndirizzi(); // Funzione per ottenere indirizzi disponibili
 
 // Recupera tutti gli edifici
 $edifici = OttieniEdifici();
 
 // Se è stato inviato un codice per la modifica
 if (isset($_GET['edit'])) {
-    $codice = $_GET['edit'];
+    $idEdificio = $_GET['edit'];
     foreach ($edifici as $edificio) {
-        if ($edificio['ID_Edificio'] === $codice) {
+        if ($edificio['ID_Edificio'] === $idEdificio) {
             $edificioInModifica = $edificio;
+            // Rimuovi il prefisso per visualizzare solo il nome
+            $edificioInModifica['Nome'] = RimuoviPrefissoEdificio($edificioInModifica['Nome']);
             break;
         }
     }
@@ -18,28 +23,15 @@ if (isset($_GET['edit'])) {
 
 // Gestione del modulo di modifica
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['submit_modifica'])) {
-    $vecchioCodice = $_POST['vecchio_codice'];
-    $nome = $_POST['nome'];
-    $indirizzo = $_POST['indirizzo'];
-    $capacitaTotale = $_POST['capacita_totale'];
+    $vecchioCodice = $_POST['id_edificio'];
+    $nome = AggiungiPrefissoEdificio($_POST['nome']); // Aggiungi il prefisso al nome
+    $indirizzo = trim($_POST['indirizzo']);
 
-    // Generazione del codice edificio
-    $prefisso = '';
-    if ($indirizzo === 'Viale Ferdinando Stagno d\'Alcontres 31 (Papardo)') {
-        $prefisso = 'PAP';
-    } elseif ($indirizzo === 'Piazza Pugliatti, 1 (Centro)') {
-        $prefisso = 'CENT';
-    } elseif ($indirizzo === 'Viale Giovanni Palatucci, 13 (Annunziata)') {
-        $prefisso = 'ANN';
-    }
-    $nuovoCodice = $prefisso . '-ED-' . strtoupper($nome);
-
-    // Aggiungi "EDIFICIO" al nome
-    $nomeCompleto = 'EDIFICIO ' . strtoupper($nome);
-
-    $message = RimuoviEdificio($vecchioCodice);
-    if (strpos($message, 'successo') !== false) {
-        $message = InserisciEdificio($nuovoCodice, $nomeCompleto, $indirizzo, $capacitaTotale);
+    if (!is_numeric($_POST['capacita_totale'])) {
+        $message = "Errore: Capacità Totale deve essere un numero valido!";
+    } else {
+        $capacitaTotale = intval($_POST['capacita_totale']); // Assicurati che sia un numero intero
+        $message = ModificaEdificio($vecchioCodice, $nome, $indirizzo, $capacitaTotale);
     }
 
     header("Location: edificio.php?message=" . urlencode($message));
@@ -48,26 +40,26 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['submit_modifica'])) {
 
 // Gestione del modulo di creazione
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['submit_creazione'])) {
-    $nome = $_POST['nome'];
-    $indirizzo = $_POST['indirizzo'];
-    $capacitaTotale = $_POST['capacita_totale'];
+    $nome = trim($_POST['nome']); // Usa il nome diretto senza aggiungere "EDIFICIO"
+    $indirizzo = trim($_POST['indirizzo']);
+    $idEdificio = GeneraCodiceEdificio($nome, $indirizzo); // Genera il codice edificio
 
-    // Generazione del codice edificio
-    $prefisso = '';
-    if ($indirizzo === 'Viale Ferdinando Stagno d\'Alcontres 31 (Papardo)') {
-        $prefisso = 'PAP';
-    } elseif ($indirizzo === 'Piazza Pugliatti, 1 (Centro)') {
-        $prefisso = 'CENT';
-    } elseif ($indirizzo === 'Viale Giovanni Palatucci, 13 (Annunziata)') {
-        $prefisso = 'ANN';
+    if (!is_numeric($_POST['capacita_totale'])) {
+        $message = "Errore: Capacità Totale deve essere un numero valido!";
+    } else {
+        $capacitaTotale = intval($_POST['capacita_totale']); // Assicurati che sia un numero intero
+        $message = InserisciEdificio($idEdificio, $nome, $indirizzo, $capacitaTotale);
     }
-    $codice = $prefisso . '-ED-' . strtoupper($nome);
 
-    // Aggiungi "EDIFICIO" al nome
-    $nomeCompleto = 'EDIFICIO ' . strtoupper($nome);
+    header("Location: edificio.php?message=" . urlencode($message));
+    exit;
+}
 
-    $message = InserisciEdificio($codice, $nomeCompleto, $indirizzo, $capacitaTotale);
 
+// Gestione del modulo di eliminazione
+if (isset($_GET['delete'])) {
+    $idEdificio = $_GET['delete'];
+    $message = RimuoviEdificio($idEdificio);
     header("Location: edificio.php?message=" . urlencode($message));
     exit;
 }
@@ -99,15 +91,14 @@ if (isset($_GET['message'])) {
 
             <label for="indirizzo">Indirizzo:</label>
             <select id="indirizzo" name="indirizzo" required>
-                <option value="Viale Ferdinando Stagno d'Alcontres 31 (Papardo)">Viale Ferdinando Stagno d'Alcontres 31
-                    (Papardo)</option>
-                <option value="Piazza Pugliatti, 1 (Centro)">Piazza Pugliatti, 1 (Centro)</option>
-                <option value="Viale Giovanni Palatucci, 13 (Annunziata)">Viale Giovanni Palatucci, 13 (Annunziata)
-                </option>
+                <option value="">Seleziona un indirizzo</option>
+                <?php foreach ($indirizziDisponibili as $indirizzo): ?>
+                    <option value="<?= htmlspecialchars($indirizzo) ?>"><?= htmlspecialchars($indirizzo) ?></option>
+                <?php endforeach; ?>
             </select>
 
             <label for="capacita_totale">Capacità Totale:</label>
-            <input type="number" id="capacita_totale" name="capacita_totale" required min="0" step="any">
+            <input type="number" id="capacita_totale" name="capacita_totale" required min="0" step="1">
 
             <button type="submit" name="submit_creazione">Aggiungi</button>
         </form>
@@ -116,24 +107,25 @@ if (isset($_GET['message'])) {
             <!-- Modulo di modifica edificio -->
             <h2>Modifica Edificio</h2>
             <form method="POST">
-                <input type="hidden" name="vecchio_codice"
-                    value="<?php echo htmlspecialchars($edificioInModifica['ID_Edificio']); ?>">
+                <input type="hidden" name="id_edificio" value="<?= htmlspecialchars($edificioInModifica['ID_Edificio']) ?>">
 
                 <label for="nome">Nome Edificio:</label>
-                <input type="text" id="nome" name="nome"
-                    value="<?php echo htmlspecialchars($edificioInModifica['Nome']); ?>" required>
+                <input type="text" id="nome" name="nome" value="<?= htmlspecialchars($edificioInModifica['Nome']) ?>"
+                    required>
 
                 <label for="indirizzo">Indirizzo:</label>
                 <select id="indirizzo" name="indirizzo" required>
-                    <option value="Viale Ferdinando Stagno d'Alcontres 31 (Papardo)" <?php echo ($edificioInModifica['Indirizzo'] === 'Viale Ferdinando Stagno d\'Alcontres 31 (Papardo)') ? 'selected' : ''; ?>>Viale Ferdinando Stagno d'Alcontres 31 (Papardo)</option>
-                    <option value="Piazza Pugliatti, 1 (Centro)" <?php echo ($edificioInModifica['Indirizzo'] === 'Piazza Pugliatti, 1 (Centro)') ? 'selected' : ''; ?>>Piazza Pugliatti, 1 (Centro)</option>
-                    <option value="Viale Giovanni Palatucci, 13 (Annunziata)" <?php echo ($edificioInModifica['Indirizzo'] === 'Viale Giovanni Palatucci, 13 (Annunziata)') ? 'selected' : ''; ?>>Viale Giovanni Palatucci, 13 (Annunziata)</option>
+                    <option value="">Seleziona un indirizzo</option>
+                    <?php foreach ($indirizziDisponibili as $indirizzo): ?>
+                        <option value="<?= htmlspecialchars($indirizzo) ?>" <?= $edificioInModifica['Indirizzo'] === $indirizzo ? 'selected' : '' ?>>
+                            <?= htmlspecialchars($indirizzo) ?>
+                        </option>
+                    <?php endforeach; ?>
                 </select>
 
                 <label for="capacita_totale">Capacità Totale:</label>
                 <input type="number" id="capacita_totale" name="capacita_totale"
-                    value="<?php echo htmlspecialchars($edificioInModifica['CapacitaTotale']); ?>" required min="0"
-                    step="any">
+                    value="<?= htmlspecialchars($edificioInModifica['CapacitaTotale']) ?>" required min="0" step="1">
 
                 <button type="submit" name="submit_modifica">Salva modifiche</button>
             </form>
@@ -143,7 +135,7 @@ if (isset($_GET['message'])) {
             <table>
                 <thead>
                     <tr>
-                        <th>Codice</th>
+                        <th>ID</th>
                         <th>Nome</th>
                         <th>Indirizzo</th>
                         <th>Capacità Totale</th>
@@ -151,21 +143,28 @@ if (isset($_GET['message'])) {
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach ($edifici as $edificio): ?>
+                    <?php if (is_array($edifici) && count($edifici) > 0): ?>
+                        <?php foreach ($edifici as $edificio): ?>
+                            <tr>
+                                <td><?= htmlspecialchars($edificio['ID_Edificio']) ?></td>
+                                <td><?= htmlspecialchars($edificio['Nome']) ?></td>
+                                <td><?= htmlspecialchars($edificio['Indirizzo']) ?></td>
+                                <td><?= htmlspecialchars($edificio['CapacitaTotale']) ?></td>
+                                <td>
+                                    <a
+                                        href="edificio.php?edit=<?= htmlspecialchars($edificio['ID_Edificio']) ?>"><button>Modifica</button></a>
+                                    <a href="edificio.php?delete=<?= htmlspecialchars($edificio['ID_Edificio']) ?>"
+                                        onclick="return confirm('Sei sicuro di voler eliminare questo edificio?');">
+                                        <button class="delete">Rimuovi</button>
+                                    </a>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php else: ?>
                         <tr>
-                            <td><?php echo htmlspecialchars($edificio['ID_Edificio']); ?></td>
-                            <td><?php echo htmlspecialchars($edificio['Nome']); ?></td>
-                            <td><?php echo htmlspecialchars($edificio['Indirizzo']); ?></td>
-                            <td><?php echo htmlspecialchars($edificio['CapacitaTotale']); ?></td>
-                            <td>
-                                <a
-                                    href="edificio.php?edit=<?php echo htmlspecialchars($edificio['ID_Edificio']); ?>"><button>Modifica</button></a>
-                                <a href="edificio.php?delete=<?php echo htmlspecialchars($edificio['ID_Edificio']); ?>"
-                                    onclick="return confirm('Sei sicuro di voler eliminare questo edificio?');"><button
-                                        class="delete">Rimuovi</button></a>
-                            </td>
+                            <td colspan="5">Nessun edificio trovato.</td>
                         </tr>
-                    <?php endforeach; ?>
+                    <?php endif; ?>
                 </tbody>
             </table>
         <?php endif; ?>

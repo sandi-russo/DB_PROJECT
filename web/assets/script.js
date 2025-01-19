@@ -36,7 +36,7 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 });
 
-// Funzione per caricare gli edifici in base all'indirizzo selezionato
+// FUNZIONE PER CARICARE GLI EDIFICI IN BASE ALL'INDIRIZZO SELEZIONATO
 function caricaEdifici() {
   const indirizzo = document.getElementById("indirizzo").value;
   const edificioSelect = document.getElementById("edificio");

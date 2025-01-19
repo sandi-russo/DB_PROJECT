@@ -154,7 +154,9 @@ function CreaAmministratore($nome, $cognome, $email, $password)
 function CreaTabelle($conn)
 {
   try {
+    // Apri la connessione al database
     $conn = ApriConnessione();
+
     echo "Connessione al database avvenuta con successo!<br>";
 
     $queries = [
@@ -177,6 +179,9 @@ function CreaTabelle($conn)
                 Cognome VARCHAR(50) NOT NULL,
                 SSD VARCHAR(10) NOT NULL,
                 UnitaOrganizzativa VARCHAR(255) NOT NULL,
+                Email VARCHAR(100) NOT NULL UNIQUE,
+                Telefono VARCHAR(20),
+                Ruolo ENUM('Contratto (50 ore)', 'Ricercatore (80 ore)', 'Associato (100 ore)', 'Ordinario (120 ore)') NOT NULL,
                 FOREIGN KEY (SSD) REFERENCES SETTORE_SCIENTIFICO(SSD),
                 FOREIGN KEY (UnitaOrganizzativa) REFERENCES UNITA_ORGANIZZATIVA(Codice)
             )",
@@ -196,6 +201,7 @@ function CreaTabelle($conn)
                 Capacita INT NOT NULL CHECK (Capacita > 0),
                 Tipologia ENUM('teorica', 'laboratorio') NOT NULL,
                 Edificio VARCHAR(40),
+                Attrezzature TEXT,
                 FOREIGN KEY (Edificio) REFERENCES EDIFICIO(ID_Edificio)
             )",
 
@@ -242,36 +248,38 @@ function CreaTabelle($conn)
 
       // Tabella DISPONIBILITA_DOCENTE
       "CREATE TABLE IF NOT EXISTS DISPONIBILITA_DOCENTE (
-        ID_Docente INT NOT NULL,
-        Giorno ENUM('lunedi', 'martedi', 'mercoledi', 'giovedi', 'venerdi') NOT NULL,
-        OraInizio TIME NOT NULL CHECK (OraInizio >= '09:00:00' AND OraInizio <= '16:00:00'),
-        OraFine TIME NOT NULL CHECK (OraFine >= '11:00:00' AND OraFine <= '18:00:00'),
-        FOREIGN KEY (ID_Docente) REFERENCES DOCENTE(ID_Docente)
-      )",
+                ID_Docente INT NOT NULL,
+                Giorno ENUM('lunedi', 'martedi', 'mercoledi', 'giovedi', 'venerdi') NOT NULL,
+                OraInizio TIME NOT NULL CHECK (OraInizio >= '09:00:00' AND OraInizio <= '16:00:00'),
+                OraFine TIME NOT NULL CHECK (OraFine >= '11:00:00' AND OraFine <= '18:00:00'),
+                PRIMARY KEY (ID_Docente, Giorno, OraInizio),
+                FOREIGN KEY (ID_Docente) REFERENCES DOCENTE(ID_Docente)
+            )",
 
       // Tabella DISPONIBILITA_AULA
       "CREATE TABLE IF NOT EXISTS DISPONIBILITA_AULA (
-        ID_Aula INT NOT NULL,
-        Giorno ENUM('lunedi', 'martedi', 'mercoledi', 'giovedi', 'venerdi') NOT NULL,
-        OraInizio TIME NOT NULL CHECK (OraInizio >= '09:00:00' AND OraInizio <= '16:00:00'),
-        OraFine TIME NOT NULL CHECK (OraFine >= '11:00:00' AND OraFine <= '18:00:00'),
-        TipologiaUtilizzo ENUM('lezione', 'laboratorio', 'esame') NOT NULL,
-        FOREIGN KEY (ID_Aula) REFERENCES AULA(ID_Aula)
-      )",
+                ID_Aula INT NOT NULL,
+                Giorno ENUM('lunedi', 'martedi', 'mercoledi', 'giovedi', 'venerdi') NOT NULL,
+                OraInizio TIME NOT NULL CHECK (OraInizio >= '09:00:00' AND OraInizio <= '16:00:00'),
+                OraFine TIME NOT NULL CHECK (OraFine >= '11:00:00' AND OraFine <= '18:00:00'),
+                TipologiaUtilizzo ENUM('lezione', 'laboratorio', 'esame') NOT NULL,
+                PRIMARY KEY (ID_Aula, Giorno, OraInizio),
+                FOREIGN KEY (ID_Aula) REFERENCES AULA(ID_Aula)
+            )",
 
       // Tabella ORARIO
       "CREATE TABLE IF NOT EXISTS ORARIO (
-        ID_Orario INT AUTO_INCREMENT PRIMARY KEY,
-        Giorno DATE NOT NULL,
-        OraInizio TIME NOT NULL CHECK (OraInizio >= '09:00:00' AND OraInizio <= '16:00:00'),
-        OraFine TIME NOT NULL CHECK (OraFine >= '11:00:00' AND OraFine <= '18:00:00'),
-        Aula INT NOT NULL,
-        Insegnamento VARCHAR(10) NOT NULL,
-        Docente INT NOT NULL,
-        FOREIGN KEY (Aula) REFERENCES AULA(ID_Aula),
-        FOREIGN KEY (Insegnamento) REFERENCES INSEGNAMENTO(Codice),
-        FOREIGN KEY (Docente) REFERENCES DOCENTE(ID_Docente)
-      )",
+                ID_Orario INT AUTO_INCREMENT PRIMARY KEY,
+                Giorno DATE NOT NULL,
+                OraInizio TIME NOT NULL CHECK (OraInizio >= '09:00:00' AND OraInizio <= '16:00:00'),
+                OraFine TIME NOT NULL CHECK (OraFine >= '11:00:00' AND OraFine <= '18:00:00'),
+                Aula INT NOT NULL,
+                Insegnamento VARCHAR(10) NOT NULL,
+                Docente INT NOT NULL,
+                FOREIGN KEY (Aula) REFERENCES AULA(ID_Aula),
+                FOREIGN KEY (Insegnamento) REFERENCES INSEGNAMENTO(Codice),
+                FOREIGN KEY (Docente) REFERENCES DOCENTE(ID_Docente)
+            )",
 
       // Tabella GRUPPO_STUDENTI
       "CREATE TABLE IF NOT EXISTS GRUPPO_STUDENTI (
@@ -288,6 +296,7 @@ function CreaTabelle($conn)
                 Periodo VARCHAR(50) NOT NULL,
                 OreTotali INT NOT NULL CHECK (OreTotali >= 0),
                 MaxOreConsentite INT NOT NULL CHECK (MaxOreConsentite > 0),
+                PRIMARY KEY (ID_Docente, Periodo),
                 FOREIGN KEY (ID_Docente) REFERENCES DOCENTE(ID_Docente),
                 FOREIGN KEY (Periodo) REFERENCES PERIODO(Periodo)
             )",
@@ -340,83 +349,74 @@ function CreaTabelle($conn)
     // Esegui i trigger separatamente
     $triggers = [
       "CREATE TRIGGER trg_chk_orario_docente
-      BEFORE INSERT ON DISPONIBILITA_DOCENTE
-      FOR EACH ROW
-      BEGIN
-          IF NEW.OraFine <= NEW.OraInizio THEN
-              SIGNAL SQLSTATE '45000'
-              SET MESSAGE_TEXT = 'L\'ora finale non può essere minore o uguale all\'ora di inizio.';
-          END IF;
-      END",
+            BEFORE INSERT ON DISPONIBILITA_DOCENTE
+            FOR EACH ROW
+            BEGIN
+                IF NEW.OraFine <= NEW.OraInizio THEN
+                    SIGNAL SQLSTATE '45000'
+                    SET MESSAGE_TEXT = 'L\'ora finale non può essere minore o uguale all\'ora di inizio.';
+                END IF;
+            END",
 
       "CREATE TRIGGER trg_chk_orario_aula
-      BEFORE INSERT ON DISPONIBILITA_AULA
-      FOR EACH ROW
-      BEGIN
-          IF NEW.OraFine <= NEW.OraInizio THEN
-              SIGNAL SQLSTATE '45000'
-              SET MESSAGE_TEXT = 'L\'ora finale non può essere minore o uguale all\'ora di inizio.';
-          END IF;
-      END",
+            BEFORE INSERT ON DISPONIBILITA_AULA
+            FOR EACH ROW
+            BEGIN
+                IF NEW.OraFine <= NEW.OraInizio THEN
+                    SIGNAL SQLSTATE '45000'
+                    SET MESSAGE_TEXT = 'L\'ora finale non può essere minore o uguale all\'ora di inizio.';
+                END IF;
+            END",
 
       "CREATE TRIGGER trg_chk_capacita_aula
-      BEFORE INSERT ON AULA
-      FOR EACH ROW
-      BEGIN
-          DECLARE capacita_edificio INT;
+            BEFORE INSERT ON AULA
+            FOR EACH ROW
+            BEGIN
+                DECLARE capacita_edificio INT;
 
-          -- Ottieni la capacità totale dell'edificio associato
-          SELECT CapacitaTotale INTO capacita_edificio
-          FROM EDIFICIO
-          WHERE ID_Edificio = NEW.Edificio;
+                -- Ottieni la capacità totale dell'edificio associato
+                SELECT CapacitaTotale INTO capacita_edificio
+                FROM EDIFICIO
+                WHERE ID_Edificio = NEW.Edificio;
 
-          -- Verifica che la Capacita dell'aula non superi la CapacitaTotale dell'edificio
-          IF NEW.Capacita > capacita_edificio THEN
-              SIGNAL SQLSTATE '45000'
-              SET MESSAGE_TEXT = 'La capacità dell\'aula non può superare la capacità totale dell\'edificio.';
-          END IF;
-      END",
+                -- Verifica che la Capacita dell'aula non superi la CapacitaTotale dell'edificio
+                IF NEW.Capacita > capacita_edificio THEN
+                    SIGNAL SQLSTATE '45000'
+                    SET MESSAGE_TEXT = 'La capacità dell\'aula non può superare la capacità totale dell\'edificio.';
+                END IF;
+            END",
 
       "CREATE TRIGGER trg_chk_date_periodo
-      BEFORE INSERT ON PERIODO
-      FOR EACH ROW
-      BEGIN
-          IF NEW.DataInizio >= NEW.DataFine THEN
-              SIGNAL SQLSTATE '45000'
-              SET MESSAGE_TEXT = 'La data di inizio non può essere uguale o successiva alla data di fine.';
-          END IF;
-      END",
+            BEFORE INSERT ON PERIODO
+            FOR EACH ROW
+            BEGIN
+                IF NEW.DataInizio >= NEW.DataFine THEN
+                    SIGNAL SQLSTATE '45000'
+                    SET MESSAGE_TEXT = 'La data di inizio non può essere uguale o successiva alla data di fine.';
+                END IF;
+            END",
 
       "CREATE TRIGGER trg_chk_anno_corso
-      BEFORE INSERT ON CORSO_DI_STUDIO
-      FOR EACH ROW
-      BEGIN
-          IF NEW.AnnoCorso < 1 OR NEW.AnnoCorso > 6 THEN
-              SIGNAL SQLSTATE '45000'
-              SET MESSAGE_TEXT = 'L\'anno del corso deve essere compreso tra 1 e 6.';
-          END IF;
-      END",
-
-      "CREATE TRIGGER trg_chk_capacita_max_edificio
-      BEFORE INSERT ON EDIFICIO
-      FOR EACH ROW
-      BEGIN
-          IF NEW.CapacitaTotale > 10000 THEN
-              SIGNAL SQLSTATE '45000'
-              SET MESSAGE_TEXT = 'La capacità totale dell\'edificio non può superare 10.000.';
-          END IF;
-      END"
+            BEFORE INSERT ON CORSO_DI_STUDIO
+            FOR EACH ROW
+            BEGIN
+                IF NEW.AnnoCorso <= 0 THEN
+                    SIGNAL SQLSTATE '45000'
+                    SET MESSAGE_TEXT = 'L\'anno del corso deve essere maggiore di zero.';
+                END IF;
+            END"
     ];
 
-    // Esegui le query per i trigger
+    // Esegui i trigger
     foreach ($triggers as $trigger) {
       if ($conn->query($trigger) === TRUE) {
-        echo "Trigger eseguito correttamente!<br>";
+        echo "Trigger creato correttamente!<br>";
       } else {
-        echo "Errore nell'esecuzione del trigger: " . $conn->error . "<br>";
+        echo "Errore nella creazione del trigger: " . $conn->error . "<br>";
       }
     }
 
+    // Chiudi la connessione al database
     ChiudiConnessione($conn);
 
   } catch (Exception $e) {
@@ -426,13 +426,13 @@ function CreaTabelle($conn)
 }
 
 // FUNZIONE PER OTTENERE TUTTE LE UNITÀ ORGANIZZATIVE
-function OttieniUnitaOrganizzative()
+function OttieniUnitaOrganizzative($soloCodiceNome = false)
 {
   $conn = ApriConnessione();
   $unitaOrganizzative = [];
 
   try {
-    $query = "SELECT * FROM UNITA_ORGANIZZATIVA";
+    $query = $soloCodiceNome ? "SELECT Codice, Nome FROM UNITA_ORGANIZZATIVA" : "SELECT * FROM UNITA_ORGANIZZATIVA";
     $result = $conn->query($query);
 
     if ($result->num_rows > 0) {
@@ -690,10 +690,10 @@ function OttieniCorsiDiStudio()
 }
 
 // FUNZIONE PER OTTENERE I SETTORI SCIENTIFICI
-function OttieniSettoriScientifici()
+function OttieniSettoriScientifici($soloSSD = false)
 {
   $conn = ApriConnessione();
-  $sql = "SELECT * FROM SETTORE_SCIENTIFICO";
+  $sql = $soloSSD ? "SELECT SSD FROM SETTORE_SCIENTIFICO" : "SELECT * FROM SETTORE_SCIENTIFICO";
   $result = $conn->query($sql);
 
   $settori = [];
@@ -760,11 +760,11 @@ function OttieniEdifici()
 {
   $conn = ApriConnessione();
 
-  $sql = "SELECT * FROM EDIFICIO";
+  $sql = "SELECT ID_Edificio, Nome, Indirizzo FROM EDIFICIO ORDER BY Nome ASC";
   $result = $conn->query($sql);
 
   $edifici = [];
-  if ($result->num_rows > 0) {
+  if ($result && $result->num_rows > 0) {
     while ($row = $result->fetch_assoc()) {
       $edifici[] = $row;
     }
@@ -796,8 +796,8 @@ function InserisciEdificio($idEdificio, $nome, $indirizzo, $capacitaTotale)
   return $message;
 }
 
-// FUNZIONE PER MODIFICARE UN EDIFICIO
-function ModificaEdificio($vecchioCodice, $nuovoCodice, $nome, $indirizzo, $capacitaTotale)
+// FUNZIONE PER MODIFICARE UN EDIFICIO (senza modificare l'ID)
+function ModificaEdificio($vecchioCodice, $nome, $indirizzo, $capacitaTotale)
 {
   // Controllo se CapacitaTotale è un numero valido
   if (!is_numeric($capacitaTotale)) {
@@ -807,11 +807,11 @@ function ModificaEdificio($vecchioCodice, $nuovoCodice, $nome, $indirizzo, $capa
   $conn = ApriConnessione();
 
   // Prepara la query di aggiornamento
-  $sql = "UPDATE EDIFICIO SET ID_Edificio = ?, Nome = ?, Indirizzo = ?, CapacitaTotale = ? 
-            WHERE ID_Edificio = ?";
+  $sql = "UPDATE EDIFICIO SET Nome = ?, Indirizzo = ?, CapacitaTotale = ? 
+          WHERE ID_Edificio = ?";
 
   $stmt = $conn->prepare($sql);
-  $stmt->bind_param("ssssi", $nuovoCodice, $nome, $indirizzo, $capacitaTotale, $vecchioCodice);
+  $stmt->bind_param("ssis", $nome, $indirizzo, $capacitaTotale, $vecchioCodice);
 
   // Esegui la query
   if ($stmt->execute()) {
@@ -844,6 +844,48 @@ function RimuoviEdificio($idEdificio)
   $stmt->close();
   ChiudiConnessione($conn);
   return $message;
+}
+
+// FUNZIONE PER GENERARE CODICE EDIFICIO
+function GeneraCodiceEdificio($nome, $indirizzo)
+{
+  $prefisso = '';
+  if ($indirizzo === 'Viale Ferdinando Stagno d\'Alcontres 31 (Papardo)') {
+    $prefisso = 'PAP';
+  } elseif ($indirizzo === 'Piazza Pugliatti, 1 (Centro)') {
+    $prefisso = 'CENT';
+  } elseif ($indirizzo === 'Viale Giovanni Palatucci, 13 (Annunziata)') {
+    $prefisso = 'ANN';
+  }
+
+  // Rimuove spazi e crea abbreviazione del nome (primi 3 caratteri)
+  $nomeAbbreviato = strtoupper(substr(trim($nome), 0, 3));
+  return $prefisso . '-ED-' . $nomeAbbreviato;
+}
+
+
+// FUNZIONE PER OTTENERE RIMUOVERE IL PREFISSO DALL'EDIFICIO
+function RimuoviPrefissoEdificio($nomeCompleto)
+{
+  // Rimuovi "EDIFICIO " dal nome per visualizzarlo o modificarlo
+  return str_replace('EDIFICIO ', '', $nomeCompleto);
+}
+
+// FUNZIONE PER AGGIUNGERE IL PREFISSO ALL'EDIFICIO
+function AggiungiPrefissoEdificio($nome)
+{
+  // Aggiungi "EDIFICIO " al nome per salvarlo
+  return 'EDIFICIO ' . strtoupper(trim($nome));
+}
+
+// FUNZIONE PER OTTENERE GLI INDIRIZZI DISPONIBILI
+function OttieniIndirizzi()
+{
+  return [
+    'Viale Giovanni Palatucci, 13 (Annunziata)',
+    'Piazza Pugliatti, 1 (Centro)',
+    'Viale Ferdinando Stagno d\'Alcontres 31 (Papardo)'
+  ];
 }
 
 // FUNZIONE PER OTTENERE TUTTE LE LINGUE
@@ -909,7 +951,7 @@ function OttieniAule()
   $result = $conn->query($sql);
 
   $aule = [];
-  if ($result->num_rows > 0) {
+  if ($result && $result->num_rows > 0) {
     while ($row = $result->fetch_assoc()) {
       $aule[] = $row;
     }
@@ -919,16 +961,35 @@ function OttieniAule()
   return $aule;
 }
 
+// FUNZIONE PER OTTENERE TUTTE LE TIPOLOGIE DI AULA
+
+function OttieniTipologieAula()
+{
+  $conn = ApriConnessione();
+  $sql = "SHOW COLUMNS FROM AULA LIKE 'Tipologia'";
+  $result = $conn->query($sql);
+  $tipologie = [];
+  if ($result && $row = $result->fetch_assoc()) {
+    // es: "enum('teorica','laboratorio')"
+    preg_match_all("/'([^']+)'/", $row['Type'], $matches);
+    if (isset($matches[1])) {
+      $tipologie = $matches[1];
+    }
+  }
+  ChiudiConnessione($conn);
+  return $tipologie;
+}
+
 // FUNZIONE PER INSERIRE UN'AULA
-function InserisciAula($nome, $capacita, $tipologia, $edificio)
+function InserisciAula($nome, $capacita, $tipologia, $edificio, $attrezzature)
 {
   $conn = ApriConnessione();
 
-  $sql = "INSERT INTO AULA (Nome, Capacita, Tipologia, Edificio)
-          VALUES (?, ?, ?, ?)";
+  $sql = "INSERT INTO AULA (Nome, Capacita, Tipologia, Edificio, Attrezzature)
+            VALUES (?, ?, ?, ?, ?)";
 
   $stmt = $conn->prepare($sql);
-  $stmt->bind_param("siss", $nome, $capacita, $tipologia, $edificio);
+  $stmt->bind_param("sisss", $nome, $capacita, $tipologia, $edificio, $attrezzature);
 
   if ($stmt->execute()) {
     $message = "Aula inserita con successo!";
@@ -941,16 +1002,44 @@ function InserisciAula($nome, $capacita, $tipologia, $edificio)
   return $message;
 }
 
-// FUNZIONE PER MODIFICARE UN'AULA
-function ModificaAula($idAula, $nome, $capacita, $tipologia, $edificio)
+// FUNZIONE PER MODIFICARE UN AULA
+function ModificaAula($idAula, $nome, $capacita, $tipologia, $edificio, $attrezzature)
 {
-  $conn = ApriConnessione();
+  if (!is_numeric($capacita)) {
+    return "Errore: la capacità deve essere un numero valido!";
+  }
 
-  $sql = "UPDATE AULA SET Nome = ?, Capacita = ?, Tipologia = ?, Edificio = ?
-          WHERE ID_Aula = ?";
+  // Validazione della tipologia
+  $tipoConsentiti = OttieniTipologieAula();
+  if (!in_array($tipologia, $tipoConsentiti)) {
+    return "Errore: tipologia non valida!";
+  }
+
+  // Validazione dell'edificio
+  $conn = ApriConnessione();
+  $stmt = $conn->prepare("SELECT ID_Edificio FROM EDIFICIO WHERE ID_Edificio = ?");
+  $stmt->bind_param("s", $edificio);
+  $stmt->execute();
+  $result = $stmt->get_result();
+  if ($result->num_rows === 0) {
+    $stmt->close();
+    ChiudiConnessione($conn);
+    return "Errore: l'edificio selezionato non esiste!";
+  }
+  $stmt->close();
+
+  // Prepara la query di aggiornamento
+  $sql = "UPDATE AULA SET Nome = ?, Capacita = ?, Tipologia = ?, Edificio = ?, Attrezzature = ? 
+            WHERE ID_Aula = ?";
 
   $stmt = $conn->prepare($sql);
-  $stmt->bind_param("sissi", $nome, $capacita, $tipologia, $edificio, $idAula);
+  if (!$stmt) {
+    ChiudiConnessione($conn);
+    return "Errore nella preparazione della query: " . $conn->error;
+  }
+
+  // Corretto il tipo di binding: s=string, i=integer
+  $stmt->bind_param("sisssi", $nome, $capacita, $tipologia, $edificio, $attrezzature, $idAula);
 
   if ($stmt->execute()) {
     $message = "Aula modificata con successo!";
@@ -982,4 +1071,174 @@ function RimuoviAula($idAula)
   $stmt->close();
   ChiudiConnessione($conn);
   return $message;
+}
+
+// FUNZIONE PER OTTENERE LA LISTA DI TUTTI I DOCENTI
+function OttieniDocenti()
+{
+  $conn = ApriConnessione();
+
+  $sql = "SELECT * FROM DOCENTE";
+  $result = $conn->query($sql);
+
+  $docenti = [];
+  if ($result && $result->num_rows > 0) {
+    while ($row = $result->fetch_assoc()) {
+      $docenti[] = $row;
+    }
+  }
+
+  ChiudiConnessione($conn);
+  return $docenti;
+}
+
+// FUNZIONE PER INSERIRE UN DOCENTE
+function InserisciDocente($nome, $cognome, $ssd, $unitaOrganizzativa, $email, $telefono, $ruolo)
+{
+  $conn = ApriConnessione();
+
+  $sql = "INSERT INTO DOCENTE (Nome, Cognome, SSD, UnitaOrganizzativa, Email, Telefono, Ruolo) VALUES (?, ?, ?, ?, ?, ?, ?)";
+
+  $stmt = $conn->prepare($sql);
+  $stmt->bind_param("sssssss", $nome, $cognome, $ssd, $unitaOrganizzativa, $email, $telefono, $ruolo);
+
+  if ($stmt->execute()) {
+    $message = "Docente inserito con successo!";
+  } else {
+    $message = "Errore nell'inserimento del docente: " . $stmt->error;
+  }
+
+  $stmt->close();
+  ChiudiConnessione($conn);
+  return $message;
+}
+
+
+// FUNZIONE PER MODIFICARE UN DOCENTE
+function ModificaDocente($idDocente, $nome, $cognome, $ssd, $unitaOrganizzativa, $email, $telefono, $ruolo)
+{
+  $conn = ApriConnessione();
+
+  $sql = "UPDATE DOCENTE SET Nome = ?, Cognome = ?, SSD = ?, UnitaOrganizzativa = ?, Email = ?, Telefono = ?, Ruolo = ? WHERE ID_Docente = ?";
+
+  $stmt = $conn->prepare($sql);
+  $stmt->bind_param("sssssssi", $nome, $cognome, $ssd, $unitaOrganizzativa, $email, $telefono, $ruolo, $idDocente);
+
+  if ($stmt->execute()) {
+    $message = "Docente modificato con successo!";
+  } else {
+    $message = "Errore nella modifica del docente: " . $stmt->error;
+  }
+
+  $stmt->close();
+  ChiudiConnessione($conn);
+  return $message;
+}
+
+// FUNZIONE PER RIMUOVERE UN DOCENTE
+function RimuoviDocente($idDocente)
+{
+  $conn = ApriConnessione();
+
+  $sql = "DELETE FROM DOCENTE WHERE ID_Docente = ?";
+
+  $stmt = $conn->prepare($sql);
+  $stmt->bind_param("i", $idDocente);
+
+  if ($stmt->execute()) {
+    $message = "Docente rimosso con successo!";
+  } else {
+    $message = "Errore nella rimozione del docente: " . $stmt->error;
+  }
+
+  $stmt->close();
+  ChiudiConnessione($conn);
+  return $message;
+}
+
+// FUNZIONE PER INSERIRE UNA DISPONIBILITA' DOCENTE
+function InserisciDisponibilitaDocente($idDocente, $giorno, $oraInizio, $oraFine)
+{
+  $conn = ApriConnessione();
+
+  $sql = "INSERT INTO DISPONIBILITA_DOCENTE (ID_Docente, Giorno, OraInizio, OraFine) VALUES (?, ?, ?, ?)";
+
+  $stmt = $conn->prepare($sql);
+  $stmt->bind_param("isss", $idDocente, $giorno, $oraInizio, $oraFine);
+
+  if ($stmt->execute()) {
+    $message = "Disponibilità docente inserita con successo!";
+  } else {
+    $message = "Errore nell'inserimento della disponibilità del docente: " . $stmt->error;
+  }
+
+  $stmt->close();
+  ChiudiConnessione($conn);
+  return $message;
+}
+
+// FUNZIONE PER INSERIRE UN CARICO LAVORO DOCENTE
+function InserisciCaricoLavoroDocente($idDocente, $periodo, $oreTotali, $maxOreConsentite)
+{
+  $conn = ApriConnessione();
+
+  $sql = "INSERT INTO CARICO_LAVORO_DOCENTE (ID_Docente, Periodo, OreTotali, MaxOreConsentite) VALUES (?, ?, ?, ?)";
+
+  $stmt = $conn->prepare($sql);
+  $stmt->bind_param("isii", $idDocente, $periodo, $oreTotali, $maxOreConsentite);
+
+  if ($stmt->execute()) {
+    $message = "Carico lavoro docente inserito con successo!";
+  } else {
+    $message = "Errore nell'inserimento del carico lavoro del docente: " . $stmt->error;
+  }
+
+  $stmt->close();
+  ChiudiConnessione($conn);
+  return $message;
+}
+
+// FUNZIONE PER OTTENERE TUTTI I VALORI DELLA COLONNA RUOLO NELLA TABELLA DOCENTE
+function OttieniValoriRuolo()
+{
+  // Apri la connessione al database
+  $conn = ApriConnessione();
+
+  // Query per ottenere la definizione della colonna Ruolo dalla tabella Docente
+  $sql = "SHOW COLUMNS FROM DOCENTE LIKE 'Ruolo'";
+  $result = $conn->query($sql);
+
+  $valoriRuolo = [];
+  if ($result && $result->num_rows > 0) {
+    $row = $result->fetch_assoc();
+
+    // Il tipo della colonna (e.g., "enum('Valore1','Valore2',...)") è nella chiave 'Type'
+    $tipo = $row['Type'];
+
+    // Estraggo i valori ENUM dal tipo
+    if (preg_match("/^enum\((.+)\)$/", $tipo, $matches)) {
+      // Divido i valori, rimuovo gli apici singoli e li aggiungo all'array
+      $valoriRuolo = array_map(function ($valore) {
+        return trim($valore, "'");
+      }, explode(",", $matches[1]));
+    }
+  }
+
+  // Chiudi la connessione al database
+  ChiudiConnessione($conn);
+
+  return $valoriRuolo;
+}
+
+// FUNZIONE PER OTTENERE LE ORE MASSIME CONSENTITE PER OGNI RUOLO
+function OttieniOreMassimePerRuolo($ruolo)
+{
+  $oreMassime = [
+    'Contratto (50 ore)' => 50,
+    'Ricercatore (80 ore)' => 80,
+    'Associato (100 ore)' => 100,
+    'Ordinario (120 ore)' => 120
+  ];
+
+  return isset($oreMassime[$ruolo]) ? $oreMassime[$ruolo] : 0;
 }

@@ -155,7 +155,8 @@ button.delete:hover {
 form input[type="text"],
 form input[type="email"],
 form input[type="password"],
-input[type="time"] {
+input[type="time"],
+input[type="select"]  {
     height: 40px; /* Altezza uniforme */
     padding: 0 10px; /* Spazio interno */
     font-size: 16px; /* Testo leggibile */
